@@ -14,9 +14,13 @@ namespace NxtTipBot
     public class SlackConnector
     {
         private readonly string apiToken;
+        private string selfId;
         private List<Channel> channels;
         private List<User> users;
-        private List<InstantMessage> instantMessages; 
+        private List<InstantMessage> instantMessages;
+        private ClientWebSocket webSocket;
+        private readonly UTF8Encoding encoder = new UTF8Encoding();
+        private int id = 1;
 
         public SlackConnector(string apiToken)
         {
@@ -33,17 +37,18 @@ namespace NxtTipBot
                 var json = await content.ReadAsStringAsync();
                 var jObject = JObject.Parse(json);
                 websocketUri = (string)jObject["url"];
+                selfId = (string)jObject["self"]["id"];
                 channels = JsonConvert.DeserializeObject<List<Channel>>(jObject["channels"].ToString());
                 users = JsonConvert.DeserializeObject<List<User>>(jObject["users"].ToString());
                 instantMessages = JsonConvert.DeserializeObject<List<InstantMessage>>(jObject["ims"].ToString());
             }
 
-            var webSocket = new ClientWebSocket();            
+            webSocket = new ClientWebSocket();            
             await webSocket.ConnectAsync(new System.Uri(websocketUri), CancellationToken.None);
-            await Recieve(webSocket);
+            await Recieve();
         }
 
-        private async Task Recieve(ClientWebSocket webSocket)
+        private async Task Recieve()
         {
             var buffer = new byte[1024];
             while (webSocket.State == WebSocketState.Open)
@@ -55,19 +60,23 @@ namespace NxtTipBot
                 }
                 else
                 {
-                    var encoder = new UTF8Encoding();
                     var json = encoder.GetString(buffer, 0, result.Count);
                     var jObject = JObject.Parse(json);
                     var type = (string)jObject["type"];
                     switch (type)
                     {
+                        case "channel_created": HandleChannelCreated(jObject);
+                            break;
                         case "hello": Console.WriteLine("Hello recieved.");
                             break;
-                        case "message": HandleMessage(json);
+                        case "message": await HandleMessage(json);
                             break;
-                        case "presence_change": // ignore
+                        case "channel_archive": // ignore
+                        case "presence_change":
                         case "reconnect_url":
                         case "user_typing":
+                            break;
+                        case null: if ((string)jObject["reply_to"] != "1") Console.WriteLine(json);
                             break;
                         default: Console.WriteLine(json);
                             break; 
@@ -76,16 +85,43 @@ namespace NxtTipBot
             }
         }
 
-        private void HandleMessage(string json)
+        private void HandleChannelCreated(JObject jObject)
+        {
+            var channel = JsonConvert.DeserializeObject<Channel>(jObject["channel"].ToString());
+            channel.IsMember = false;
+            channels.Add(channel);
+            Console.WriteLine($"#{channel.Name} was created.");
+        }
+
+        private async Task HandleMessage(string json)
         {
             var message = JsonConvert.DeserializeObject<Message>(json);
             var user = users.Single(u => u.Id == message.User);
             var channel = channels.SingleOrDefault(c => c.Id == message.Channel);
+            var instantMessage = instantMessages.SingleOrDefault(im => im.Id == message.Channel);
             if (channel != null)
             {
                 Console.Write($"#{channel.Name} ");
             }
             Console.WriteLine($"{user.Name}: {message.Text}");
+            
+            if (user.Id != selfId)
+            {
+                if (instantMessage != null)
+                {
+                    await SendMessage(instantMessage.Id, "Got it!");
+                }
+                else if (channel != null)
+                {
+                    await SendMessage(channel.Id, "Stop spamming!");
+                }
+            }
+        }
+
+        private async Task SendMessage(string channel, string message)
+        {
+            byte[] buffer = encoder.GetBytes($"{{\"id\": {id},\"type\": \"message\",\"channel\": \"{channel}\",\"text\": \"{message}\"}}");
+            await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
         }
     }
 }
