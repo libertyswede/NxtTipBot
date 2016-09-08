@@ -2,9 +2,14 @@
   "version": "1.0.0-*",
   "buildOptions": {
     "debugType": "portable",
-    "emitEntryPoint": true
+    "emitEntryPoint": true,
+    "copyToOutput": ["config.json", "config-Development.json"]
   },
   "dependencies": {
+    "Microsoft.Extensions.PlatformAbstractions": "1.0.0",
+    "Microsoft.Extensions.Configuration": "1.0.0",
+    "Microsoft.Extensions.Configuration.FileExtensions": "1.0.0",
+    "Microsoft.Extensions.Configuration.Json": "1.0.0",
     "System.Net.WebSockets.Client": "4.3.0-preview1-24508-04",
     "System.Net.Http": "4.1.0",
     "Newtonsoft.Json": "9.0.1"
