@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace NxtTipBot
@@ -11,6 +13,9 @@ namespace NxtTipBot
     public class SlackConnector
     {
         private readonly string apiToken;
+        private List<Channel> channels;
+        private List<User> users;
+        private List<InstantMessage> instantMessages; 
 
         public SlackConnector(string apiToken)
         {
@@ -28,6 +33,9 @@ namespace NxtTipBot
                 // Console.WriteLine(json);
                 var jObject = JObject.Parse(json);
                 websocketUri = (string)jObject["url"];
+                channels = JsonConvert.DeserializeObject<List<Channel>>(jObject["channels"].ToString());
+                users = JsonConvert.DeserializeObject<List<User>>(jObject["users"].ToString());
+                instantMessages = JsonConvert.DeserializeObject<List<InstantMessage>>(jObject["ims"].ToString());
             }
 
             var webSocket = new ClientWebSocket();            
