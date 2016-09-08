@@ -57,6 +57,7 @@ namespace NxtTipBot
                             break;
                         case "presence_change": // ignore
                         case "reconnect_url":
+                        case "user_typing":
                             break;
                         default: Console.WriteLine(json);
                             break; 
