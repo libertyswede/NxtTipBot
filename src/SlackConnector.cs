@@ -31,7 +31,6 @@ namespace NxtTipBot
             using (var content = response.Content)
             {
                 var json = await content.ReadAsStringAsync();
-                // Console.WriteLine(json);
                 var jObject = JObject.Parse(json);
                 websocketUri = (string)jObject["url"];
                 channels = JsonConvert.DeserializeObject<List<Channel>>(jObject["channels"].ToString());
