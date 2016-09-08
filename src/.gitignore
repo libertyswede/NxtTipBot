@@ -1,2 +1,4 @@
 project.lock.json
 .vscode/
+bin/
+obj/
