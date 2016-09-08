@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Text;
@@ -63,6 +64,8 @@ namespace NxtTipBot
                     {
                         case "hello": Console.WriteLine("Hello recieved.");
                             break;
+                        case "message": HandleMessage(json);
+                            break;
                         case "presence_change": // ignore
                         case "reconnect_url":
                         case "user_typing":
@@ -72,6 +75,18 @@ namespace NxtTipBot
                     }
                 }
             }
+        }
+
+        private void HandleMessage(string json)
+        {
+            var message = JsonConvert.DeserializeObject<Message>(json);
+            var user = users.Single(u => u.Id == message.User);
+            var channel = channels.SingleOrDefault(c => c.Id == message.Channel);
+            if (channel != null)
+            {
+                Console.Write($"#{channel.Name} ");
+            }
+            Console.WriteLine($"{user.Name}: {message.Text}");
         }
     }
 }
