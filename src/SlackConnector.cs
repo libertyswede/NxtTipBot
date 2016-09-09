@@ -90,7 +90,7 @@ namespace NxtTipBot
 
         private void HandleNullType(JObject jObject, string json)
         {
-            if ((string)jObject["reply_to"] != null) 
+            if ((string)jObject["reply_to"] == null) 
                 logger.LogDebug(json);
         }
 
