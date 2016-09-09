@@ -68,17 +68,22 @@ namespace NxtTipBot
                     var type = (string)jObject["type"];
                     switch (type)
                     {
-                        case "channel_created": HandleChannelCreated(jObject);
-                            break;
-                        case "hello": logger.LogDebug("Hello recieved.");
-                            break;
-                        case "message": await HandleMessage(json);
-                            break;
-                        case "channel_archive": // ignore
+                        case "channel_archive": // ignore these
                         case "presence_change":
                         case "reconnect_url":
                         case "user_typing":
                             break;
+                        
+                        case "hello": logger.LogDebug("Hello recieved.");
+                            break;
+                        case "message": await HandleMessage(json);
+                            break;
+                        
+                        case "im_created": HandleIMCreated(jObject);
+                            break;
+                        case "channel_created": HandleChannelCreated(jObject);
+                            break;
+                        
                         case null: HandleNullType(jObject, json);
                             break;
                         default: logger.LogDebug(json);
@@ -86,19 +91,6 @@ namespace NxtTipBot
                     }
                 }
             }
-        }
-
-        private void HandleNullType(JObject jObject, string json)
-        {
-            if ((string)jObject["reply_to"] == null) 
-                logger.LogDebug(json);
-        }
-
-        private void HandleChannelCreated(JObject jObject)
-        {
-            var channel = JsonConvert.DeserializeObject<Channel>(jObject["channel"].ToString());
-            channels.Add(channel);
-            logger.LogTrace($"#{channel.Name} was created.");
         }
 
         private async Task HandleMessage(string json)
@@ -127,6 +119,32 @@ namespace NxtTipBot
                     await SendMessage(channel.Id, "Stop spamming!");
                 }
             }
+        }
+
+        private void HandleIMCreated(JObject jObject)
+        {
+            var instantMessage = new InstantMessage
+            {
+                Id = (string)jObject["channel"]["id"],
+                User = (string)jObject["user"]
+            };
+            instantMessages.Add(instantMessage);
+
+            var user = users.Single(u => u.Id == instantMessage.User);
+            logger.LogDebug($"IM with user {user.Name} was created.");
+        }
+
+        private void HandleChannelCreated(JObject jObject)
+        {
+            var channel = JsonConvert.DeserializeObject<Channel>(jObject["channel"].ToString());
+            channels.Add(channel);
+            logger.LogTrace($"#{channel.Name} was created.");
+        }
+
+        private void HandleNullType(JObject jObject, string json)
+        {
+            if ((string)jObject["reply_to"] == null) 
+                logger.LogDebug(json);
         }
 
         private async Task SendMessage(string channel, string message)
