@@ -91,9 +91,8 @@ namespace NxtTipBot
         private void HandleChannelCreated(JObject jObject)
         {
             var channel = JsonConvert.DeserializeObject<Channel>(jObject["channel"].ToString());
-            channel.IsMember = false;
             channels.Add(channel);
-            logger.LogDebug($"#{channel.Name} was created.");
+            logger.LogTrace($"#{channel.Name} was created.");
         }
 
         private async Task HandleMessage(string json)
@@ -126,7 +125,9 @@ namespace NxtTipBot
 
         private async Task SendMessage(string channel, string message)
         {
-            byte[] buffer = encoder.GetBytes($"{{\"id\": {id},\"type\": \"message\",\"channel\": \"{channel}\",\"text\": \"{message}\"}}");
+            var obj = new {id = id++, type = "message", channel = channel, text = message};
+            var json = JsonConvert.SerializeObject(obj);
+            var buffer = encoder.GetBytes(json);
             await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
         }
     }
