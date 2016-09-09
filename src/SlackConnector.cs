@@ -16,6 +16,8 @@ namespace NxtTipBot
     {
         private readonly string apiToken;
         private readonly ILogger logger;
+        private readonly NxtConnector nxtConnector;
+
         private string selfId;
         private List<Channel> channels;
         private List<User> users;
@@ -24,10 +26,11 @@ namespace NxtTipBot
         private readonly UTF8Encoding encoder = new UTF8Encoding();
         private int id = 1;
 
-        public SlackConnector(string apiToken, ILogger logger)
+        public SlackConnector(string apiToken, ILogger logger, NxtConnector nxtConnector)
         {
             this.logger = logger;
             this.apiToken = apiToken;
+            this.nxtConnector = nxtConnector;
         }
 
         public async Task Run()
@@ -94,12 +97,13 @@ namespace NxtTipBot
 
         private async Task HandleMessage(string json)
         {
+            logger.LogTrace(json);
             var message = JsonConvert.DeserializeObject<Message>(json);
-            var user = users.Single(u => u.Id == message.User);
+            var user = users.SingleOrDefault(u => u.Id == message.User);
             var channel = channels.SingleOrDefault(c => c.Id == message.Channel);
             var instantMessage = instantMessages.SingleOrDefault(im => im.Id == message.Channel);
             
-            if (user.Id != selfId)
+            if (user != null && user.Id != selfId)
             {
                 if (channel != null && message.Text.StartsWith("tipbot"))
                 {
@@ -120,7 +124,11 @@ namespace NxtTipBot
 
         private async Task HandleIMMessage(Message message, User user, InstantMessage instantMessage)
         {
-            if (string.Equals(message.Text, "help", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(message.Text))
+            {
+                await SendMessage(instantMessage.Id, "huh? try typing *help* for a list of available commands.");
+            }
+            else if (message.Text.Equals("help", StringComparison.OrdinalIgnoreCase))
             {
                 const string helpText = 
                 @"*Direct Message Commands*
@@ -131,6 +139,30 @@ _withdraw [nxt address] amount_ - withdraws amount (in NXT) to specified NXT add
 *Channel Commands*
 _tipbot tip [user or nxt address] amount_ - sends a tip to specified user or address";
                 await SendMessage(instantMessage.Id, helpText);
+            }
+            else if (message.Text.Equals("balance", StringComparison.OrdinalIgnoreCase))
+            {
+                // TODO:
+                // var account = await nxtConnector.GetAccount(user.Id);
+                // if (account == null)
+                // {
+                //     account = nxtConnector.CreateAccount(user.Id);
+                // }
+                await SendMessage(instantMessage.Id, "https://nxtportal.org/accounts/47475721164246888");
+            }
+            else if (message.Text.Equals("deposit", StringComparison.OrdinalIgnoreCase))
+            {
+                // TODO:
+                // var account = await nxtConnector.GetAccount(user.Id);
+                // if (account == null)
+                // {
+                //     account = nxtConnector.CreateAccount(user.Id);
+                // }
+                await SendMessage(instantMessage.Id, "Deposit your stuff here: NXT-8MVA-XCVR-3JC9-2C7C3");
+            }
+            else if (message.Text.StartsWith("withdraw", StringComparison.OrdinalIgnoreCase))
+            {
+                // TODO:
             }
             else
             {

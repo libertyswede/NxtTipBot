@@ -1,3 +1,5 @@
 {
-    "apitoken": "xxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx"
+    "apitoken": "xxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx",
+    "walletFile": "c:\\temp\\nxttipbot\\nxtwallet.db",
+    "nxtServerAddress": "http://localhost:7876/nxt"
 }

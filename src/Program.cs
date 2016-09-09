@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.PlatformAbstractions;
+using NxtLib;
 
 namespace NxtTipBot
 {
@@ -16,9 +17,12 @@ namespace NxtTipBot
             var serviceProvider = SetupServiceProvider();
             var configSettings = ReadConfig();
             var apiToken = configSettings.Single(c => c.Key == "apitoken").Value;
+            var walletFile = configSettings.Single(c => c.Key == "walletFile").Value;
+            var nxtServerAddress = configSettings.Single(c => c.Key == "nxtServerAddress").Value;
 
-            var connector = new SlackConnector(apiToken, serviceProvider.GetService<ILogger>());
-            Task.Run(() => connector.Run()).Wait();
+            var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress), walletFile);
+            var slackConnector = new SlackConnector(apiToken, serviceProvider.GetService<ILogger>(), nxtConnector);
+            Task.Run(() => slackConnector.Run()).Wait();
         }
 
         private static IServiceProvider SetupServiceProvider()
