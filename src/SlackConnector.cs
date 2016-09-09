@@ -98,25 +98,43 @@ namespace NxtTipBot
             var user = users.Single(u => u.Id == message.User);
             var channel = channels.SingleOrDefault(c => c.Id == message.Channel);
             var instantMessage = instantMessages.SingleOrDefault(im => im.Id == message.Channel);
-            if (channel != null)
-            {
-                logger.LogDebug($"#{channel.Name} {user.Name}: {message.Text}");
-            }
-            else if (instantMessage != null)
-            {
-                logger.LogDebug($"{user.Name}: {message.Text}");
-            }
             
             if (user.Id != selfId)
             {
-                if (instantMessage != null)
+                if (channel != null && message.Text.StartsWith("tipbot"))
                 {
-                    await SendMessage(instantMessage.Id, "Got it!");
+                    await HandleTipBotCommand(message, user, channel);
                 }
-                else if (channel != null)
+                else if (instantMessage != null)
                 {
-                    await SendMessage(channel.Id, "Stop spamming!");
+                    await HandleIMMessage(message, user, instantMessage);
                 }
+            }
+        }
+
+        private Task HandleTipBotCommand(Message message, User user, Channel channel)
+        {
+            logger.LogDebug($"Tip command recieved from {user.Name} in {channel.Name}: {message.Text}");
+            return Task.CompletedTask;
+        }
+
+        private async Task HandleIMMessage(Message message, User user, InstantMessage instantMessage)
+        {
+            if (string.Equals(message.Text, "help", StringComparison.OrdinalIgnoreCase))
+            {
+                const string helpText = 
+                @"*Direct Message Commands*
+_balance_ - Wallet balance
+_deposit_ - shows your deposit address
+_withdraw [nxt address] amount_ - withdraws amount (in NXT) to specified NXT address
+
+*Channel Commands*
+_tipbot tip [user or nxt address] amount_ - sends a tip to specified user or address";
+                await SendMessage(instantMessage.Id, helpText);
+            }
+            else
+            {
+                await SendMessage(instantMessage.Id, "huh? try typing *help* for a list of available commands.");
             }
         }
 
