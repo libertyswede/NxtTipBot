@@ -6,6 +6,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -14,6 +15,7 @@ namespace NxtTipBot
     public class SlackConnector
     {
         private readonly string apiToken;
+        private readonly ILogger logger;
         private string selfId;
         private List<Channel> channels;
         private List<User> users;
@@ -22,8 +24,9 @@ namespace NxtTipBot
         private readonly UTF8Encoding encoder = new UTF8Encoding();
         private int id = 1;
 
-        public SlackConnector(string apiToken)
+        public SlackConnector(string apiToken, ILogger logger)
         {
+            this.logger = logger;
             this.apiToken = apiToken;
         }
 
@@ -67,7 +70,7 @@ namespace NxtTipBot
                     {
                         case "channel_created": HandleChannelCreated(jObject);
                             break;
-                        case "hello": Console.WriteLine("Hello recieved.");
+                        case "hello": logger.LogDebug("Hello recieved.");
                             break;
                         case "message": await HandleMessage(json);
                             break;
@@ -76,9 +79,9 @@ namespace NxtTipBot
                         case "reconnect_url":
                         case "user_typing":
                             break;
-                        case null: if ((string)jObject["reply_to"] != "1") Console.WriteLine(json);
+                        case null: if ((string)jObject["reply_to"] != "1") logger.LogDebug(json);
                             break;
-                        default: Console.WriteLine(json);
+                        default: logger.LogDebug(json);
                             break; 
                     }
                 }
@@ -90,7 +93,7 @@ namespace NxtTipBot
             var channel = JsonConvert.DeserializeObject<Channel>(jObject["channel"].ToString());
             channel.IsMember = false;
             channels.Add(channel);
-            Console.WriteLine($"#{channel.Name} was created.");
+            logger.LogDebug($"#{channel.Name} was created.");
         }
 
         private async Task HandleMessage(string json)
@@ -101,9 +104,12 @@ namespace NxtTipBot
             var instantMessage = instantMessages.SingleOrDefault(im => im.Id == message.Channel);
             if (channel != null)
             {
-                Console.Write($"#{channel.Name} ");
+                logger.LogDebug($"#{channel.Name} {user.Name}: {message.Text}");
             }
-            Console.WriteLine($"{user.Name}: {message.Text}");
+            else if (instantMessage != null)
+            {
+                logger.LogDebug($"{user.Name}: {message.Text}");
+            }
             
             if (user.Id != selfId)
             {
