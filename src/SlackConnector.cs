@@ -79,13 +79,19 @@ namespace NxtTipBot
                         case "reconnect_url":
                         case "user_typing":
                             break;
-                        case null: if ((string)jObject["reply_to"] != "1") logger.LogDebug(json);
+                        case null: HandleNullType(jObject, json);
                             break;
                         default: logger.LogDebug(json);
                             break; 
                     }
                 }
             }
+        }
+
+        private void HandleNullType(JObject jObject, string json)
+        {
+            if ((string)jObject["reply_to"] != null) 
+                logger.LogDebug(json);
         }
 
         private void HandleChannelCreated(JObject jObject)
