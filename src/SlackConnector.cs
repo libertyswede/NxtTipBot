@@ -68,8 +68,7 @@ namespace NxtTipBot
                     var type = (string)jObject["type"];
                     switch (type)
                     {
-                        case "channel_archive": // ignore these
-                        case "presence_change":
+                        case "presence_change":// ignore these
                         case "reconnect_url":
                         case "user_typing":
                             break;
