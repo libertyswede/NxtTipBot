@@ -194,7 +194,7 @@ _tipbot tip @user amount_ - sends a tip to specified user or address";
                 if (account == null)
                 {
                     account = await nxtConnector.CreateAccount(user.Id);
-                    await SendMessage(instantMessage.Id, $"I have created account with address: {account.NxtAccountRs} for you.");
+                    await SendMessage(instantMessage.Id, $"I have created account with address: {account.NxtAccountRs} for you.\nPlease do not deposit large amounts of NXT here, as it is meant as a fun tool and is not to be seen as a secure wallet like the core client or mynxt wallets are.");
                 }
                 else
                 {
