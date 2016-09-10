@@ -142,23 +142,26 @@ _tipbot tip [user or nxt address] amount_ - sends a tip to specified user or add
             }
             else if (message.Text.Equals("balance", StringComparison.OrdinalIgnoreCase))
             {
-                // TODO:
-                // var account = await nxtConnector.GetAccount(user.Id);
-                // if (account == null)
-                // {
-                //     account = nxtConnector.CreateAccount(user.Id);
-                // }
-                await SendMessage(instantMessage.Id, "https://nxtportal.org/accounts/47475721164246888");
+                var account = await nxtConnector.GetAccount(user.Id);
+                if (account == null)
+                {
+                    await SendMessage(instantMessage.Id, $"You do currently not have an account, try *deposit* command to create one.");
+                    return;
+                }
+                var balance = await nxtConnector.GetBalance(account);
+                await SendMessage(instantMessage.Id, $"Your current balance is {balance} NXT.");
             }
             else if (message.Text.Equals("deposit", StringComparison.OrdinalIgnoreCase))
             {
-                // TODO:
-                // var account = await nxtConnector.GetAccount(user.Id);
-                // if (account == null)
-                // {
-                //     account = nxtConnector.CreateAccount(user.Id);
-                // }
-                await SendMessage(instantMessage.Id, "Deposit your stuff here: NXT-8MVA-XCVR-3JC9-2C7C3");
+                var account = await nxtConnector.GetAccount(user.Id);
+                if (account == null)
+                {
+                    await SendMessage(instantMessage.Id, $"I have created account with address: {account.NxtAccountRs} for you.");
+                }
+                else
+                {
+                    await SendMessage(instantMessage.Id, $"You can deposit NXT here: {account.NxtAccountRs}");
+                }
             }
             else if (message.Text.StartsWith("withdraw", StringComparison.OrdinalIgnoreCase))
             {
