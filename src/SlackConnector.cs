@@ -193,6 +193,7 @@ _tipbot tip @user amount_ - sends a tip to specified user or address";
                 var account = await nxtConnector.GetAccount(user.Id);
                 if (account == null)
                 {
+                    account = await nxtConnector.CreateAccount(user.Id);
                     await SendMessage(instantMessage.Id, $"I have created account with address: {account.NxtAccountRs} for you.");
                 }
                 else
