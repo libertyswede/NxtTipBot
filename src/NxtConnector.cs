@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using NxtLib;
 using NxtLib.Accounts;
@@ -44,6 +45,15 @@ namespace NxtTipBot
         {
             var balanceReply = await accountService.GetBalance(account.NxtAccountId);
             return balanceReply.UnconfirmedBalance.Nxt;
+        }
+
+        public async Task<ulong> SendMoney(NxtAccount account, string addressRs, Amount amount, string message)
+        {
+            var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, account.SecretPhrase);
+            parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true); 
+            var sendMoneyReply = await accountService.SendMoney(parameters, addressRs, amount);
+            
+            return sendMoneyReply.TransactionId.Value;
         }
     }
 }

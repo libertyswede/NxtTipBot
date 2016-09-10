@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NxtLib;
 
 namespace NxtTipBot
 {
@@ -133,7 +136,7 @@ namespace NxtTipBot
                 const string helpText = 
                 @"*Direct Message Commands*
 _balance_ - Wallet balance
-_deposit_ - shows your deposit address
+_deposit_ - shows your deposit address (or creates one if you don't have one already)
 _withdraw [nxt address] amount_ - withdraws amount (in NXT) to specified NXT address
 
 *Channel Commands*
@@ -165,7 +168,34 @@ _tipbot tip [user or nxt address] amount_ - sends a tip to specified user or add
             }
             else if (message.Text.StartsWith("withdraw", StringComparison.OrdinalIgnoreCase))
             {
-                // TODO:
+                var regex = new Regex("^withdraw (NXT-[A-Z0-9\\-]+) ([0-9\\.]+)");
+                var match = regex.Match(message.Text);
+                if (match.Success)
+                {
+                    var account = await nxtConnector.GetAccount(user.Id);
+                    if (account == null)
+                    {
+                        await SendMessage(instantMessage.Id, $"You do not have an account.");
+                        return;
+                    }
+
+                    var address = match.Groups[1].Value;
+                    var amount = Amount.CreateAmountFromNxt(decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
+                    
+                    var balance = await nxtConnector.GetBalance(account);
+                    if (balance < amount.Nxt + Amount.OneNxt.Nxt)
+                    {
+                        await SendMessage(instantMessage.Id, $"Not enough funds.");
+                        return;
+                    }
+
+                    var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw requested");
+                    await SendMessage(instantMessage.Id, $"{amount.Nxt} sent to specified address, (https://nxtportal.org/transactions/{txId})");
+                }
+                else
+                {
+                    await SendMessage(instantMessage.Id, "huh? try typing *help* for a list of available commands.");
+                }
             }
             else
             {
