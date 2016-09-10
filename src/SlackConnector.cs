@@ -190,7 +190,7 @@ _tipbot tip [user or nxt address] amount_ - sends a tip to specified user or add
                     }
 
                     var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw requested");
-                    await SendMessage(instantMessage.Id, $"{amount.Nxt} sent to specified address, (https://nxtportal.org/transactions/{txId})");
+                    await SendMessage(instantMessage.Id, $"{amount.Nxt} NXT was sent to the specified address, (https://nxtportal.org/transactions/{txId})");
                 }
                 else
                 {
