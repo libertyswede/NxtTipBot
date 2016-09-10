@@ -119,10 +119,44 @@ namespace NxtTipBot
             }
         }
 
-        private Task HandleTipBotCommand(Message message, User user, Channel channel)
+        private async Task HandleTipBotCommand(Message message, User user, Channel channel)
         {
             logger.LogDebug($"Tip command recieved from {user.Name} in {channel.Name}: {message.Text}");
-            return Task.CompletedTask;
+
+            var regex = new Regex("^tipbot tip <@([A-Za-z0-9]+)> ([0-9\\.]+)");
+            var match = regex.Match(message.Text);
+            if (match.Success)
+            {
+                var account = await nxtConnector.GetAccount(user.Id);
+                if (account == null)
+                {
+                    await SendMessage(channel.Id, $"Sorry m8, you do not have an account. Try sending me *help* in a direct message and I'll help you out set one up.");
+                    return;
+                }
+
+                var recipientUser = match.Groups[1].Value;
+                var amount = Amount.CreateAmountFromNxt(decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
+                
+                var balance = await nxtConnector.GetBalance(account);
+                if (balance < amount.Nxt + Amount.OneNxt.Nxt)
+                {
+                    await SendMessage(channel.Id, $"Not enough funds.");
+                    return;
+                }
+                var recipientAccount = await nxtConnector.GetAccount(recipientUser);
+                if (recipientAccount == null)
+                {
+                    recipientAccount = await nxtConnector.CreateAccount(recipientUser);
+                    // TODO: Send IM to recipient about his new account
+                }
+
+                var txId = await nxtConnector.SendMoney(account, recipientAccount.NxtAccountRs, amount, "slackbot tip");
+                await SendMessage(channel.Id, $"<@{user.Id}> => <@{recipientUser}> {amount.Nxt} NXT (https://nxtportal.org/transactions/{txId})");
+            }
+            else
+            {
+                await SendMessage(channel.Id, "huh? try sending me *help* in a direct message for a list of available commands.");
+            }
         }
 
         private async Task HandleIMMessage(Message message, User user, InstantMessage instantMessage)
@@ -140,7 +174,7 @@ _deposit_ - shows your deposit address (or creates one if you don't have one alr
 _withdraw [nxt address] amount_ - withdraws amount (in NXT) to specified NXT address
 
 *Channel Commands*
-_tipbot tip [user or nxt address] amount_ - sends a tip to specified user or address";
+_tipbot tip @user amount_ - sends a tip to specified user or address";
                 await SendMessage(instantMessage.Id, helpText);
             }
             else if (message.Text.Equals("balance", StringComparison.OrdinalIgnoreCase))
