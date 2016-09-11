@@ -82,8 +82,28 @@ namespace NxtTipBot
                         return $"Not enough funds. You only have {balance} NXT.";
                     }
 
-                    var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw requested");
-                    return $"{amount.Nxt} NXT was sent to the specified address, (https://nxtportal.org/transactions/{txId})";
+                    try
+                    {
+                        var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw from slack tipbot requested");
+                        return $"{amount.Nxt} NXT was sent to the specified address, (https://nxtportal.org/transactions/{txId})";
+                    }
+                    catch (ArgumentException e)
+                    {
+                        if (e.Message.Contains("not a valid reed solomon address"))
+                        {
+                            return "Not a valid NXT address";
+                        }
+                        else
+                        {
+                            logger.LogError(0, e, e.Message);
+                            throw;
+                        }
+                    }
+                    catch (NxtException e)
+                    {
+                        logger.LogError(0, e, e.Message);
+                        throw;
+                    }
                 }
                 else
                 {
