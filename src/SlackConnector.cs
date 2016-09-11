@@ -1,17 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NxtLib;
 
 namespace NxtTipBot
 {
@@ -19,7 +16,7 @@ namespace NxtTipBot
     {
         private readonly string apiToken;
         private readonly ILogger logger;
-        private readonly NxtConnector nxtConnector;
+        private readonly SlackHandler slackHandler;
 
         private string selfId;
         private List<Channel> channels;
@@ -29,11 +26,11 @@ namespace NxtTipBot
         private readonly UTF8Encoding encoder = new UTF8Encoding();
         private int id = 1;
 
-        public SlackConnector(string apiToken, ILogger logger, NxtConnector nxtConnector)
+        public SlackConnector(string apiToken, ILogger logger, SlackHandler slackHandler)
         {
             this.logger = logger;
             this.apiToken = apiToken;
-            this.nxtConnector = nxtConnector;
+            this.slackHandler = slackHandler;
         }
 
         public async Task Run()
@@ -79,7 +76,7 @@ namespace NxtTipBot
                         case "user_typing":
                             break;
                         
-                        case "hello": logger.LogDebug("Hello recieved.");
+                        case "hello": logger.LogTrace("Hello recieved.");
                             break;
                         case "message": await HandleMessage(json);
                             break;
@@ -91,7 +88,7 @@ namespace NxtTipBot
                         
                         case null: HandleNullType(jObject, json);
                             break;
-                        default: logger.LogDebug(json);
+                        default: logger.LogTrace(json);
                             break; 
                     }
                 }
@@ -110,131 +107,20 @@ namespace NxtTipBot
             {
                 if (channel != null && message.Text.StartsWith("tipbot"))
                 {
-                    await HandleTipBotCommand(message, user, channel);
+                    var reply = await slackHandler.HandleTipBotChannelCommand(message, user, channel);
+                    if (!string.IsNullOrEmpty(reply))
+                    {
+                        await SendMessage(channel.Id, reply);
+                    }
                 }
                 else if (instantMessage != null)
                 {
-                    await HandleIMMessage(message, user, instantMessage);
-                }
-            }
-        }
-
-        private async Task HandleTipBotCommand(Message message, User user, Channel channel)
-        {
-            logger.LogDebug($"Tip command recieved from {user.Name} in {channel.Name}: {message.Text}");
-
-            var regex = new Regex("^tipbot tip <@([A-Za-z0-9]+)> ([0-9\\.]+)");
-            var match = regex.Match(message.Text);
-            if (match.Success)
-            {
-                var account = await nxtConnector.GetAccount(user.Id);
-                if (account == null)
-                {
-                    await SendMessage(channel.Id, $"Sorry m8, you do not have an account. Try sending me *help* in a direct message and I'll help you out set one up.");
-                    return;
-                }
-
-                var recipientUser = match.Groups[1].Value;
-                var amount = Amount.CreateAmountFromNxt(decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
-                
-                var balance = await nxtConnector.GetBalance(account);
-                if (balance < amount.Nxt + Amount.OneNxt.Nxt)
-                {
-                    await SendMessage(channel.Id, $"Not enough funds.");
-                    return;
-                }
-                var recipientAccount = await nxtConnector.GetAccount(recipientUser);
-                if (recipientAccount == null)
-                {
-                    recipientAccount = await nxtConnector.CreateAccount(recipientUser);
-                    // TODO: Send IM to recipient about his new account
-                }
-
-                var txId = await nxtConnector.SendMoney(account, recipientAccount.NxtAccountRs, amount, "slackbot tip");
-                await SendMessage(channel.Id, $"<@{user.Id}> => <@{recipientUser}> {amount.Nxt} NXT (https://nxtportal.org/transactions/{txId})");
-            }
-            else
-            {
-                await SendMessage(channel.Id, "huh? try sending me *help* in a direct message for a list of available commands.");
-            }
-        }
-
-        private async Task HandleIMMessage(Message message, User user, InstantMessage instantMessage)
-        {
-            if (string.IsNullOrEmpty(message.Text))
-            {
-                await SendMessage(instantMessage.Id, "huh? try typing *help* for a list of available commands.");
-            }
-            else if (message.Text.Equals("help", StringComparison.OrdinalIgnoreCase))
-            {
-                const string helpText = 
-                @"*Direct Message Commands*
-_balance_ - Wallet balance
-_deposit_ - shows your deposit address (or creates one if you don't have one already)
-_withdraw [nxt address] amount_ - withdraws amount (in NXT) to specified NXT address
-
-*Channel Commands*
-_tipbot tip @user amount_ - sends a tip to specified user or address";
-                await SendMessage(instantMessage.Id, helpText);
-            }
-            else if (message.Text.Equals("balance", StringComparison.OrdinalIgnoreCase))
-            {
-                var account = await nxtConnector.GetAccount(user.Id);
-                if (account == null)
-                {
-                    await SendMessage(instantMessage.Id, $"You do currently not have an account, try *deposit* command to create one.");
-                    return;
-                }
-                var balance = await nxtConnector.GetBalance(account);
-                await SendMessage(instantMessage.Id, $"Your current balance is {balance} NXT.");
-            }
-            else if (message.Text.Equals("deposit", StringComparison.OrdinalIgnoreCase))
-            {
-                var account = await nxtConnector.GetAccount(user.Id);
-                if (account == null)
-                {
-                    account = await nxtConnector.CreateAccount(user.Id);
-                    await SendMessage(instantMessage.Id, $"I have created account with address: {account.NxtAccountRs} for you.\nPlease do not deposit large amounts of NXT here, as it is meant as a fun tool and is not to be seen as a secure wallet like the core client or mynxt wallets are.");
-                }
-                else
-                {
-                    await SendMessage(instantMessage.Id, $"You can deposit NXT here: {account.NxtAccountRs}");
-                }
-            }
-            else if (message.Text.StartsWith("withdraw", StringComparison.OrdinalIgnoreCase))
-            {
-                var regex = new Regex("^withdraw (NXT-[A-Z0-9\\-]+) ([0-9\\.]+)");
-                var match = regex.Match(message.Text);
-                if (match.Success)
-                {
-                    var account = await nxtConnector.GetAccount(user.Id);
-                    if (account == null)
+                    var reply = await slackHandler.InstantMessageRecieved(message, user, instantMessage);
+                    if (!string.IsNullOrEmpty(reply))
                     {
-                        await SendMessage(instantMessage.Id, $"You do not have an account.");
-                        return;
+                        await SendMessage(instantMessage.Id, reply);
                     }
-
-                    var address = match.Groups[1].Value;
-                    var amount = Amount.CreateAmountFromNxt(decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
-                    
-                    var balance = await nxtConnector.GetBalance(account);
-                    if (balance < amount.Nxt + Amount.OneNxt.Nxt)
-                    {
-                        await SendMessage(instantMessage.Id, $"Not enough funds.");
-                        return;
-                    }
-
-                    var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw requested");
-                    await SendMessage(instantMessage.Id, $"{amount.Nxt} NXT was sent to the specified address, (https://nxtportal.org/transactions/{txId})");
                 }
-                else
-                {
-                    await SendMessage(instantMessage.Id, "huh? try typing *help* for a list of available commands.");
-                }
-            }
-            else
-            {
-                await SendMessage(instantMessage.Id, "huh? try typing *help* for a list of available commands.");
             }
         }
 
