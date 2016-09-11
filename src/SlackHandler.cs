@@ -79,7 +79,7 @@ namespace NxtTipBot
                     var balance = await nxtConnector.GetBalance(account);
                     if (balance < amount.Nxt + Amount.OneNxt.Nxt)
                     {
-                        return "Not enough funds.";
+                        return $"Not enough funds. You only have {balance} NXT.";
                     }
 
                     var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw requested");
