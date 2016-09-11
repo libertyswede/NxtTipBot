@@ -142,8 +142,16 @@ namespace NxtTipBot
                     // TODO: Send IM to recipient about his new account
                 }
 
-                var txId = await nxtConnector.SendMoney(account, recipientAccount.NxtAccountRs, amount, "slackbot tip");
-                return $"<@{user.Id}> => <@{recipientUser}> {amount.Nxt} NXT (https://nxtportal.org/transactions/{txId})";
+                try
+                {
+                    var txId = await nxtConnector.SendMoney(account, recipientAccount.NxtAccountRs, amount, "slackbot tip");
+                    return $"<@{user.Id}> => <@{recipientUser}> {amount.Nxt} NXT (https://nxtportal.org/transactions/{txId})";
+                }
+                catch (NxtException e)
+                {
+                    logger.LogError(0, e, e.Message);
+                    throw;
+                }
             }
             else
             {
