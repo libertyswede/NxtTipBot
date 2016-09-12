@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using NxtTipbot;
 
-namespace NxtTipBot.Migrations
+namespace NxtTipbot.Migrations
 {
     [DbContext(typeof(WalletContext))]
     [Migration("20160912220247_Initial")]

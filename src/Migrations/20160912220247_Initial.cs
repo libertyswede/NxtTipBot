@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace NxtTipBot.Migrations
+namespace NxtTipbot.Migrations
 {
     public partial class Initial : Migration
     {
