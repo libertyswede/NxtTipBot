@@ -14,6 +14,7 @@ Written in .NET, with support for [.NET Standard 1.0](https://docs.microsoft.com
 
 # Todo
 * Migrate database to Entity Framework 7 to avoid SQL injection issues.
+* Add file logging (NLog).
 * Use AES 256 encryption for secret phrases.  
   Decryption key to be stored in config file/passed as parameter/read from environment variable.
 * Add new command 'initiate' where a public key is provided to initiate a new NXT address.
