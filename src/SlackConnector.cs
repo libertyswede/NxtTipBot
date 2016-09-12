@@ -24,7 +24,6 @@ namespace NxtTipbot
         private List<InstantMessage> instantMessages;
         private ClientWebSocket webSocket;
         private readonly UTF8Encoding encoder = new UTF8Encoding();
-        private int id = 1;
 
         public SlackConnector(string apiToken, ILogger logger, SlackHandler slackHandler)
         {
@@ -70,7 +69,6 @@ namespace NxtTipbot
                 {
                     var json = encoder.GetString(buffer, 0, result.Count);
                     var jObject = JObject.Parse(json);
-                    logger.LogTrace($"Data recieved: {json}");
                     var type = (string)jObject["type"];
                     switch (type)
                     {
@@ -90,7 +88,7 @@ namespace NxtTipbot
                         
                         case null: HandleNullType(jObject, json);
                             break;
-                        default:
+                        default: logger.LogTrace($"Data recieved: {json}");
                             break; 
                     }
                 }
@@ -122,11 +120,11 @@ namespace NxtTipbot
             var instantMessage = new InstantMessage
             {
                 Id = (string)jObject["channel"]["id"],
-                User = (string)jObject["user"]
+                UserId = (string)jObject["user"]
             };
             instantMessages.Add(instantMessage);
 
-            var user = users.Single(u => u.Id == instantMessage.User);
+            var user = users.Single(u => u.Id == instantMessage.UserId);
             logger.LogTrace($"IM with user {user.Name} was created.");
         }
 
@@ -143,13 +141,36 @@ namespace NxtTipbot
                 logger.LogTrace(json);
         }
 
-        public async Task SendMessage(string channel, string message)
+        public async Task SendMessage(string channelId, string message, bool unfurl_links = true)
         {
-            var obj = new {id = id++, type = "message", channel = channel, text = message};
-            var json = JsonConvert.SerializeObject(obj);
-            logger.LogTrace($"Sending data: {json}");
-            var buffer = encoder.GetBytes(json);
-            await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+            logger.LogTrace($"Sending chat.postMessage to channel id: {channelId}, message: {message}, unfurl_links: {unfurl_links}");
+            using (var httpClient = new HttpClient())
+            using (var response = await httpClient.GetAsync($"https://slack.com/api/chat.postMessage?token={apiToken}&channel={channelId}&text={message}&unfurl_links={unfurl_links}"))
+            using (var content = response.Content)
+            {
+                var json = await content.ReadAsStringAsync();
+                logger.LogTrace($"Reply from request to chat.postMessage: {json}");
+            }
+        }
+
+        public async Task<string> GetInstantMessageId(string userId)
+        {
+            var id = instantMessages.SingleOrDefault(im => im.UserId == userId)?.Id;
+            if (id == null)
+            {
+                logger.LogTrace($"Requesting im.open with user {userId}");
+                using (var httpClient = new HttpClient())
+                using (var response = await httpClient.GetAsync($"https://slack.com/api/im.open?token={apiToken}&user={userId}"))
+                using (var content = response.Content)
+                {
+                    var json = await content.ReadAsStringAsync();
+                    logger.LogTrace($"Reply from request to im.open: {json}");
+                    var jObject = JObject.Parse(json);
+                    id = (string)jObject["channel"]["id"];
+                    instantMessages.Add(new InstantMessage {Id = id, UserId = userId});
+                }
+            }
+            return id;
         }
     }
 }

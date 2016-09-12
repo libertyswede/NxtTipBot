@@ -194,14 +194,18 @@ namespace NxtTipbot
             if (recipientAccount == null)
             {
                 recipientAccount = await nxtConnector.CreateAccount(recipientUser);
-                // TODO: Send IM to recipient about his new account
+                var imId = await SlackConnector.GetInstantMessageId(recipientUser);
+                var reply = $"Hi, you recieved a tip from <@{user.Id}>.\n" +
+                            "So I have set up an account for you that you can use." +
+                            "Type *help* to get more information about what commands are available.";
+                await SlackConnector.SendMessage(imId, reply);
             }
 
             try
             {
                 var txId = await nxtConnector.SendMoney(account, recipientAccount.NxtAccountRs, amount, "slackbot tip");
                 var reply = $"<@{user.Id}> => <@{recipientUser}> {amount.Nxt} NXT (https://nxtportal.org/transactions/{txId})";
-                await SlackConnector.SendMessage(channel.Id, reply);
+                await SlackConnector.SendMessage(channel.Id, reply, false);
             }
             catch (NxtException e)
             {
