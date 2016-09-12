@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NxtLib;
 
-namespace NxtTipBot
+namespace NxtTipbot
 {
     public class SlackHandler
     {

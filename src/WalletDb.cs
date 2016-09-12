@@ -2,7 +2,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 
-namespace NxtTipBot
+namespace NxtTipbot
 {
     public class WalletDb
     {

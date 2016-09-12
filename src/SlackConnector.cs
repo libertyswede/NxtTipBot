@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace NxtTipBot
+namespace NxtTipbot
 {
     public class SlackConnector
     {

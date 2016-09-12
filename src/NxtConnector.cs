@@ -4,7 +4,7 @@ using NxtLib;
 using NxtLib.Accounts;
 using NxtLib.Local;
 
-namespace NxtTipBot
+namespace NxtTipbot
 {
     public class NxtConnector
     {

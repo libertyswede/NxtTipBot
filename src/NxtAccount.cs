@@ -1,6 +1,6 @@
 using NxtLib;
 
-namespace NxtTipBot
+namespace NxtTipbot
 {
     public class NxtAccount
     {

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.PlatformAbstractions;
 using NxtLib;
 
-namespace NxtTipBot
+namespace NxtTipbot
 {
     public class Program
     {

@@ -1,4 +1,4 @@
-namespace NxtTipBot
+namespace NxtTipbot
 {
     public class User
     {
