@@ -41,6 +41,7 @@ namespace NxtTipbot
             using (var content = response.Content)
             {
                 var json = await content.ReadAsStringAsync();
+                logger.LogTrace($"Initial handshake reply with rtm.start: {json}");
                 var jObject = JObject.Parse(json);
                 websocketUri = (string)jObject["url"];
                 selfId = (string)jObject["self"]["id"];
@@ -62,22 +63,23 @@ namespace NxtTipbot
                 var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
+                    logger.LogInformation("MessageType.Close recieved, closing connection to Slack.");
                     await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
                 }
                 else
                 {
                     var json = encoder.GetString(buffer, 0, result.Count);
                     var jObject = JObject.Parse(json);
+                    logger.LogTrace($"Data recieved: {json}");
                     var type = (string)jObject["type"];
                     switch (type)
                     {
                         case "presence_change":// ignore these
                         case "reconnect_url":
                         case "user_typing":
+                        case "hello":
                             break;
-                        
-                        case "hello": logger.LogTrace("Hello recieved.");
-                            break;
+
                         case "message": await HandleMessage(json);
                             break;
                         
@@ -88,7 +90,7 @@ namespace NxtTipbot
                         
                         case null: HandleNullType(jObject, json);
                             break;
-                        default: logger.LogTrace(json);
+                        default:
                             break; 
                     }
                 }
@@ -97,7 +99,6 @@ namespace NxtTipbot
 
         private async Task HandleMessage(string json)
         {
-            logger.LogTrace(json);
             var message = JsonConvert.DeserializeObject<Message>(json);
             var user = users.SingleOrDefault(u => u.Id == message.User);
             var channel = channels.SingleOrDefault(c => c.Id == message.Channel);
@@ -134,7 +135,7 @@ namespace NxtTipbot
             instantMessages.Add(instantMessage);
 
             var user = users.Single(u => u.Id == instantMessage.User);
-            logger.LogDebug($"IM with user {user.Name} was created.");
+            logger.LogTrace($"IM with user {user.Name} was created.");
         }
 
         private void HandleChannelCreated(JObject jObject)
@@ -147,13 +148,14 @@ namespace NxtTipbot
         private void HandleNullType(JObject jObject, string json)
         {
             if ((string)jObject["reply_to"] == null) 
-                logger.LogDebug(json);
+                logger.LogTrace(json);
         }
 
         private async Task SendMessage(string channel, string message)
         {
             var obj = new {id = id++, type = "message", channel = channel, text = message};
             var json = JsonConvert.SerializeObject(obj);
+            logger.LogTrace($"Sending data: {json}");
             var buffer = encoder.GetBytes(json);
             await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
         }
