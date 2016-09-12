@@ -36,21 +36,22 @@ namespace NxtTipbot
             {
                 return UnknownCommandReply;
             }
-            else if (IsCommand("help", messageText))
+            else if (IsSingleWordCommand("help", messageText))
             {
                 return HelpText;
             }
-            else if (IsCommand("balance", messageText))
+            else if (IsSingleWordCommand("balance", messageText))
             {
                 var account = await nxtConnector.GetAccount(user.Id);
                 if (account == null)
                 {
+                    // This could be improved with a fancy "do you want to create new account" - button which exists in the Slack API.
                     return "You do currently not have an account, try *deposit* command to create one.";
                 }
                 var balance = await nxtConnector.GetBalance(account);
                 return $"Your current balance is {balance} NXT.";
             }
-            else if (IsCommand("deposit", messageText))
+            else if (IsSingleWordCommand("deposit", messageText))
             {
                 var account = await nxtConnector.GetAccount(user.Id);
                 if (account == null)
@@ -107,7 +108,7 @@ namespace NxtTipbot
             return UnknownCommandReply;
         }
 
-        private static bool IsCommand(string command, string message)
+        private static bool IsSingleWordCommand(string command, string message)
         {
             return message.Equals(command, StringComparison.OrdinalIgnoreCase);
         }
@@ -121,11 +122,10 @@ namespace NxtTipbot
 
         public async Task<string> HandleTipBotChannelCommand(Message message, User user, Channel channel)
         {
-            logger.LogTrace($"Tip command recieved from {user.Name} in {channel.Name}: {message.Text}");
+            Match match = null;
+            var messageText = message?.Text.Trim();
 
-            var regex = new Regex("^tipbot tip <@([A-Za-z0-9]+)> ([0-9\\.]+)");
-            var match = regex.Match(message.Text);
-            if (match.Success)
+            if ((match = IsTipCommand(messageText)).Success)
             {
                 var account = await nxtConnector.GetAccount(user.Id);
                 if (account == null)
@@ -163,6 +163,13 @@ namespace NxtTipbot
             {
                 return "huh? try sending me *help* in a direct message for a list of available commands.";
             }
+        }
+
+        private static Match IsTipCommand(string message)
+        {
+            var regex = new Regex("^tipbot tip <@([A-Za-z0-9]+)> ([0-9\\.]+)");
+            var match = regex.Match(message);
+            return match;
         }
     }
 }
