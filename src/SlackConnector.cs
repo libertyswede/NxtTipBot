@@ -108,19 +108,11 @@ namespace NxtTipbot
             {
                 if (channel != null && message.Text.StartsWith("tipbot"))
                 {
-                    var reply = await slackHandler.HandleTipBotChannelCommand(message, user, channel);
-                    if (!string.IsNullOrEmpty(reply))
-                    {
-                        await SendMessage(channel.Id, reply);
-                    }
+                    await slackHandler.HandleTipBotChannelCommand(message, user, channel);
                 }
                 else if (instantMessage != null)
                 {
-                    var reply = await slackHandler.InstantMessageRecieved(message, user, instantMessage);
-                    if (!string.IsNullOrEmpty(reply))
-                    {
-                        await SendMessage(instantMessage.Id, reply);
-                    }
+                    await slackHandler.InstantMessageRecieved(message, user, instantMessage);
                 }
             }
         }
@@ -151,7 +143,7 @@ namespace NxtTipbot
                 logger.LogTrace(json);
         }
 
-        private async Task SendMessage(string channel, string message)
+        public async Task SendMessage(string channel, string message)
         {
             var obj = new {id = id++, type = "message", channel = channel, text = message};
             var json = JsonConvert.SerializeObject(obj);

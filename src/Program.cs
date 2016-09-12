@@ -26,6 +26,7 @@ namespace NxtTipbot
             var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress), walletFile);
             var slackHandler = new SlackHandler(nxtConnector, logger);
             var slackConnector = new SlackConnector(apiToken, logger, slackHandler);
+            slackHandler.SlackConnector = slackConnector;
 
             var slackTask = Task.Run(() => slackConnector.Run());
             Task.WaitAll(slackTask);

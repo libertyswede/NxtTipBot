@@ -20,6 +20,7 @@ namespace NxtTipbot
 
         private readonly NxtConnector nxtConnector;
         private readonly ILogger logger;
+        public SlackConnector SlackConnector { get; set; }
 
         public SlackHandler(NxtConnector nxtConnector, ILogger logger)
         {
@@ -27,85 +28,120 @@ namespace NxtTipbot
             this.logger = logger;
         }
 
-        public async Task<string> InstantMessageRecieved(Message message, User user, InstantMessage instantMessage)
+        public async Task InstantMessageRecieved(Message message, User user, InstantMessage instantMessage)
         {
-            var messageText = message?.Text.Trim();            
+            var messageText = message?.Text.Trim();
             Match match = null;
 
             if (string.IsNullOrEmpty(messageText))
             {
-                return UnknownCommandReply;
+                await HandleUnknownCommand(instantMessage);
             }
             else if (IsSingleWordCommand("help", messageText))
             {
-                return HelpText;
+                await HandleHelpCommand(instantMessage);
             }
             else if (IsSingleWordCommand("balance", messageText))
             {
-                var account = await nxtConnector.GetAccount(user.Id);
-                if (account == null)
-                {
-                    // This could be improved with a fancy "do you want to create new account" - button which exists in the Slack API.
-                    return "You do currently not have an account, try *deposit* command to create one.";
-                }
-                var balance = await nxtConnector.GetBalance(account);
-                return $"Your current balance is {balance} NXT.";
+                await HandleBalanceCommand(user, instantMessage);
             }
             else if (IsSingleWordCommand("deposit", messageText))
             {
-                var account = await nxtConnector.GetAccount(user.Id);
-                if (account == null)
-                {
-                    account = await nxtConnector.CreateAccount(user.Id);
-                    return $"I have created account with address: {account.NxtAccountRs} for you.\n"
-                           + "Please do not deposit large amounts of NXT, as it is not a secure wallet like the core client or mynxt wallets.";
-                }
-                else
-                {
-                    return $"You can deposit NXT here: {account.NxtAccountRs}";
-                }
+                await HandleDepositCommand(user, instantMessage);
             }
             else if ((match = IsWithdrawCommand(messageText)).Success)
             {
-                var account = await nxtConnector.GetAccount(user.Id);
-                if (account == null)
-                {
-                    return "You do not have an account.";
-                }
+                await HandleWithdrawCommand(user, instantMessage, match);
+            }
+            else
+            {
+                await HandleUnknownCommand(instantMessage);
+            }
+        }
 
-                var address = match.Groups[1].Value;
-                var amount = Amount.CreateAmountFromNxt(decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
+        private async Task HandleUnknownCommand(InstantMessage instantMessage)
+        {
+            await SlackConnector.SendMessage(instantMessage.Id, UnknownCommandReply);
+        }
 
+        private async Task HandleHelpCommand(InstantMessage instantMessage)
+        {
+            await SlackConnector.SendMessage(instantMessage.Id, HelpText);
+        }
+
+        private async Task HandleBalanceCommand(User user, InstantMessage instantMessage)
+        {
+            var account = await nxtConnector.GetAccount(user.Id);
+            if (account == null)
+            {
+                // This could be improved with a fancy "do you want to create new account" - button which exists in the Slack API.
+                await SlackConnector.SendMessage(instantMessage.Id, "You do currently not have an account, try *deposit* command to create one.");
+            }
+            else
+            {
                 var balance = await nxtConnector.GetBalance(account);
-                if (balance < amount.Nxt + Amount.OneNxt.Nxt)
-                {
-                    return $"Not enough funds. You only have {balance} NXT.";
-                }
+                await SlackConnector.SendMessage(instantMessage.Id, $"Your current balance is {balance} NXT.");
+            }
+        }
 
-                try
+        private async Task HandleDepositCommand(User user, InstantMessage instantMessage)
+        {
+            var account = await nxtConnector.GetAccount(user.Id);
+            if (account == null)
+            {
+                account = await nxtConnector.CreateAccount(user.Id);
+                var reply = $"I have created account with address: {account.NxtAccountRs} for you.\n"
+                            + "Please do not deposit large amounts of NXT, as it is not a secure wallet like the core client or mynxt wallets.";
+                await SlackConnector.SendMessage(instantMessage.Id, reply);
+            }
+            else
+            {
+                await SlackConnector.SendMessage(instantMessage.Id, $"You can deposit NXT here: {account.NxtAccountRs}");
+            }
+        }
+
+        private async Task HandleWithdrawCommand(User user, InstantMessage instantMessage, Match match)
+        {
+            var account = await nxtConnector.GetAccount(user.Id);
+            if (account == null)
+            {
+                await SlackConnector.SendMessage(instantMessage.Id, "You do not have an account.");
+                return;
+            }
+
+            var address = match.Groups[1].Value;
+            var amount = Amount.CreateAmountFromNxt(decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
+
+            var balance = await nxtConnector.GetBalance(account);
+            if (balance < amount.Nxt + Amount.OneNxt.Nxt)
+            {
+                await SlackConnector.SendMessage(instantMessage.Id, $"Not enough funds. You only have {balance} NXT.");
+                return;
+            }
+
+            try
+            {
+                var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw from slack tipbot requested");
+                var reply = $"{amount.Nxt} NXT was sent to the specified address, (https://nxtportal.org/transactions/{txId})";
+                await SlackConnector.SendMessage(instantMessage.Id, reply);
+            }
+            catch (ArgumentException e)
+            {
+                if (e.Message.Contains("not a valid reed solomon address"))
                 {
-                    var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw from slack tipbot requested");
-                    return $"{amount.Nxt} NXT was sent to the specified address, (https://nxtportal.org/transactions/{txId})";
+                    await SlackConnector.SendMessage(instantMessage.Id, "Not a valid NXT address");
                 }
-                catch (ArgumentException e)
-                {
-                    if (e.Message.Contains("not a valid reed solomon address"))
-                    {
-                        return "Not a valid NXT address";
-                    }
-                    else
-                    {
-                        logger.LogError(0, e, e.Message);
-                        throw;
-                    }
-                }
-                catch (NxtException e)
+                else
                 {
                     logger.LogError(0, e, e.Message);
                     throw;
                 }
             }
-            return UnknownCommandReply;
+            catch (NxtException e)
+            {
+                logger.LogError(0, e, e.Message);
+                throw;
+            }
         }
 
         private static bool IsSingleWordCommand(string command, string message)
@@ -120,48 +156,57 @@ namespace NxtTipbot
             return match;
         }
 
-        public async Task<string> HandleTipBotChannelCommand(Message message, User user, Channel channel)
+        public async Task HandleTipBotChannelCommand(Message message, User user, Channel channel)
         {
-            Match match = null;
             var messageText = message?.Text.Trim();
+            Match match = null;
 
             if ((match = IsTipCommand(messageText)).Success)
             {
-                var account = await nxtConnector.GetAccount(user.Id);
-                if (account == null)
-                {
-                    return "Sorry m8, you do not have an account. Try sending me *help* in a direct message and I'll help you out set one up.";
-                }
-
-                var recipientUser = match.Groups[1].Value;
-                var amount = Amount.CreateAmountFromNxt(decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
-                
-                var balance = await nxtConnector.GetBalance(account);
-                if (balance < amount.Nxt + Amount.OneNxt.Nxt)
-                {
-                    return "Not enough funds.";
-                }
-                var recipientAccount = await nxtConnector.GetAccount(recipientUser);
-                if (recipientAccount == null)
-                {
-                    recipientAccount = await nxtConnector.CreateAccount(recipientUser);
-                    // TODO: Send IM to recipient about his new account
-                }
-
-                try
-                {
-                    var txId = await nxtConnector.SendMoney(account, recipientAccount.NxtAccountRs, amount, "slackbot tip");
-                    return $"<@{user.Id}> => <@{recipientUser}> {amount.Nxt} NXT (https://nxtportal.org/transactions/{txId})";
-                }
-                catch (NxtException e)
-                {
-                    logger.LogError(0, e, e.Message);
-                    throw;
-                }
+                await HandleTipCommand(user, match, channel);
             }
             else
             {
-                return "huh? try sending me *help* in a direct message for a list of available commands.";
+                await SlackConnector.SendMessage(channel.Id, "huh? try sending me *help* in a direct message for a list of available commands.");
+            }
+        }
+
+        private async Task HandleTipCommand(User user, Match match, Channel channel)
+        {
+            var account = await nxtConnector.GetAccount(user.Id);
+            if (account == null)
+            {
+                const string reply =  "Sorry mate, you do not have an account. Try sending me *help* in a direct message and I'll help you out set one up.";
+                await SlackConnector.SendMessage(channel.Id, reply);
+                return;
+            }
+
+            var recipientUser = match.Groups[1].Value;
+            var amount = Amount.CreateAmountFromNxt(decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
+
+            var balance = await nxtConnector.GetBalance(account);
+            if (balance < amount.Nxt + Amount.OneNxt.Nxt)
+            {
+                await SlackConnector.SendMessage(channel.Id, "Not enough funds.");
+                return;
+            }
+            var recipientAccount = await nxtConnector.GetAccount(recipientUser);
+            if (recipientAccount == null)
+            {
+                recipientAccount = await nxtConnector.CreateAccount(recipientUser);
+                // TODO: Send IM to recipient about his new account
+            }
+
+            try
+            {
+                var txId = await nxtConnector.SendMoney(account, recipientAccount.NxtAccountRs, amount, "slackbot tip");
+                var reply = $"<@{user.Id}> => <@{recipientUser}> {amount.Nxt} NXT (https://nxtportal.org/transactions/{txId})";
+                await SlackConnector.SendMessage(channel.Id, reply);
+            }
+            catch (NxtException e)
+            {
+                logger.LogError(0, e, e.Message);
+                throw;
             }
         }
 
