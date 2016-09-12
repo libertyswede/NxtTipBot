@@ -9,6 +9,15 @@ namespace NxtTipbot
 {
     public class SlackHandler
     {
+        const string HelpText = "*Direct Message Commands*\n"
+            + "_balance_ - Wallet balance\n"
+            + "_deposit_ - shows your deposit address (or creates one if you don't have one already)\n"
+            + "_withdraw [nxt address] amount_ - withdraws amount (in NXT) to specified NXT address\n\n"
+            + "*Channel Commands*\n"
+            + "_tipbot tip @user amount_ - sends a tip to specified user or address";
+            
+        const string UnknownCommandReply = "huh? try typing *help* for a list of available commands.";
+
         private readonly NxtConnector nxtConnector;
         private readonly ILogger logger;
 
@@ -20,24 +29,18 @@ namespace NxtTipbot
 
         public async Task<string> InstantMessageRecieved(Message message, User user, InstantMessage instantMessage)
         {
-            const string UnknownCommandReply = "huh? try typing *help* for a list of available commands.";
+            var messageText = message?.Text.Trim();            
+            Match match = null;
 
-            const string HelpText = "*Direct Message Commands*\n"
-            + "_balance_ - Wallet balance\n"
-            + "_deposit_ - shows your deposit address (or creates one if you don't have one already)\n"
-            + "_withdraw [nxt address] amount_ - withdraws amount (in NXT) to specified NXT address\n\n"
-            + "*Channel Commands*\n"
-            + "_tipbot tip @user amount_ - sends a tip to specified user or address";
-
-            if (string.IsNullOrEmpty(message.Text))
+            if (string.IsNullOrEmpty(messageText))
             {
                 return UnknownCommandReply;
             }
-            else if (message.Text.Equals("help", StringComparison.OrdinalIgnoreCase))
+            else if (IsCommand("help", messageText))
             {
                 return HelpText;
             }
-            else if (message.Text.Equals("balance", StringComparison.OrdinalIgnoreCase))
+            else if (IsCommand("balance", messageText))
             {
                 var account = await nxtConnector.GetAccount(user.Id);
                 if (account == null)
@@ -47,70 +50,73 @@ namespace NxtTipbot
                 var balance = await nxtConnector.GetBalance(account);
                 return $"Your current balance is {balance} NXT.";
             }
-            else if (message.Text.Equals("deposit", StringComparison.OrdinalIgnoreCase))
+            else if (IsCommand("deposit", messageText))
             {
                 var account = await nxtConnector.GetAccount(user.Id);
                 if (account == null)
                 {
                     account = await nxtConnector.CreateAccount(user.Id);
                     return $"I have created account with address: {account.NxtAccountRs} for you.\n"
-                           +"Please do not deposit large amounts of NXT, as it is not a secure wallet like the core client or mynxt wallets.";
+                           + "Please do not deposit large amounts of NXT, as it is not a secure wallet like the core client or mynxt wallets.";
                 }
                 else
                 {
                     return $"You can deposit NXT here: {account.NxtAccountRs}";
                 }
             }
-            else if (message.Text.StartsWith("withdraw", StringComparison.OrdinalIgnoreCase))
+            else if ((match = IsWithdrawCommand(messageText)).Success)
             {
-                var regex = new Regex("^withdraw (NXT-[A-Z0-9\\-]+) ([0-9\\.]+)");
-                var match = regex.Match(message.Text);
-                if (match.Success)
+                var account = await nxtConnector.GetAccount(user.Id);
+                if (account == null)
                 {
-                    var account = await nxtConnector.GetAccount(user.Id);
-                    if (account == null)
-                    {
-                        return "You do not have an account.";
-                    }
+                    return "You do not have an account.";
+                }
 
-                    var address = match.Groups[1].Value;
-                    var amount = Amount.CreateAmountFromNxt(decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
-                    
-                    var balance = await nxtConnector.GetBalance(account);
-                    if (balance < amount.Nxt + Amount.OneNxt.Nxt)
-                    {
-                        return $"Not enough funds. You only have {balance} NXT.";
-                    }
+                var address = match.Groups[1].Value;
+                var amount = Amount.CreateAmountFromNxt(decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
 
-                    try
+                var balance = await nxtConnector.GetBalance(account);
+                if (balance < amount.Nxt + Amount.OneNxt.Nxt)
+                {
+                    return $"Not enough funds. You only have {balance} NXT.";
+                }
+
+                try
+                {
+                    var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw from slack tipbot requested");
+                    return $"{amount.Nxt} NXT was sent to the specified address, (https://nxtportal.org/transactions/{txId})";
+                }
+                catch (ArgumentException e)
+                {
+                    if (e.Message.Contains("not a valid reed solomon address"))
                     {
-                        var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw from slack tipbot requested");
-                        return $"{amount.Nxt} NXT was sent to the specified address, (https://nxtportal.org/transactions/{txId})";
+                        return "Not a valid NXT address";
                     }
-                    catch (ArgumentException e)
-                    {
-                        if (e.Message.Contains("not a valid reed solomon address"))
-                        {
-                            return "Not a valid NXT address";
-                        }
-                        else
-                        {
-                            logger.LogError(0, e, e.Message);
-                            throw;
-                        }
-                    }
-                    catch (NxtException e)
+                    else
                     {
                         logger.LogError(0, e, e.Message);
                         throw;
                     }
                 }
-                else
+                catch (NxtException e)
                 {
-                    return UnknownCommandReply;
+                    logger.LogError(0, e, e.Message);
+                    throw;
                 }
             }
             return UnknownCommandReply;
+        }
+
+        private static bool IsCommand(string command, string message)
+        {
+            return message.Equals(command, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static Match IsWithdrawCommand(string message)
+        {
+            var regex = new Regex("^withdraw (NXT-[A-Z0-9\\-]+) ([0-9\\.]+)");
+            var match = regex.Match(message);
+            return match;
         }
 
         public async Task<string> HandleTipBotChannelCommand(Message message, User user, Channel channel)
