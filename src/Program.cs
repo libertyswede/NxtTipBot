@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -17,17 +18,15 @@ namespace NxtTipbot
             Console.WriteLine("Starting up NxtTipbot");
             var logger = SetupLogging();
             var configSettings = ReadConfig();
-            
+
             var apiToken = configSettings.Single(c => c.Key == "apitoken").Value;
             var walletFile = configSettings.Single(c => c.Key == "walletFile").Value;
             var nxtServerAddress = configSettings.Single(c => c.Key == "nxtServerAddress").Value;
             logger.LogInformation($"nxtServerAddress: {nxtServerAddress}");
             logger.LogInformation($"walletFile: {walletFile}");
 
-            WalletContext.WalletFile = walletFile;
-            new WalletContext().Database.Migrate();
-
-            var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress), walletFile);
+            InitDatabase(walletFile);
+            var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress));
             var slackHandler = new SlackHandler(nxtConnector, logger);
             var slackConnector = new SlackConnector(apiToken, logger, slackHandler);
             slackHandler.SlackConnector = slackConnector;
@@ -35,6 +34,17 @@ namespace NxtTipbot
             var slackTask = Task.Run(() => slackConnector.Run());
             Task.WaitAll(slackTask);
             logger.LogInformation("Exiting program.");
+        }
+
+        private static void InitDatabase(string walletFile)
+        {
+            var folder = Path.GetDirectoryName(walletFile);
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+            WalletContext.WalletFile = walletFile;
+            new WalletContext().Database.Migrate();
         }
 
         private static IEnumerable<IConfigurationSection> ReadConfig()

@@ -4,21 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace NxtTipbot
 {
-    public class WalletDb
+    public class WalletRepository
     {
-        private readonly string filepath;
-
-        public WalletDb(string filepath)
-        {
-            var folder = Path.GetDirectoryName(filepath);
-            if (!Directory.Exists(folder))
-            {
-                Directory.CreateDirectory(folder);
-            }
-
-            this.filepath = filepath;
-        }
-
         public async Task<NxtAccount> GetAccount(string slackId)
         {
             using (var context = new WalletContext())

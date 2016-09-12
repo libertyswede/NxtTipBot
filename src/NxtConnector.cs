@@ -7,12 +7,12 @@ namespace NxtTipbot
 {
     public class NxtConnector
     {
-        private readonly WalletDb wallet;
+        private readonly WalletRepository wallet;
         private readonly IAccountService accountService;
 
-        public NxtConnector(IServiceFactory serviceFactory, string walletfile)
+        public NxtConnector(IServiceFactory serviceFactory)
         {
-            wallet = new WalletDb(walletfile);
+            wallet = new WalletRepository();
             accountService = serviceFactory.CreateAccountService();
         }
 
