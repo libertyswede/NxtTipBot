@@ -47,7 +47,7 @@ namespace NxtTipbot
         private static ILogger SetupLogging()
         {
             var loggerFactory = new LoggerFactory();
-            loggerFactory.AddConsole(LogLevel.Debug);
+            loggerFactory.AddConsole(LogLevel.Trace);
             return loggerFactory.CreateLogger("");
         }
     }
