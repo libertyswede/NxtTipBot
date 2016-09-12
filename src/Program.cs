@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.PlatformAbstractions;
@@ -22,6 +23,9 @@ namespace NxtTipbot
             var nxtServerAddress = configSettings.Single(c => c.Key == "nxtServerAddress").Value;
             logger.LogInformation($"nxtServerAddress: {nxtServerAddress}");
             logger.LogInformation($"walletFile: {walletFile}");
+
+            WalletContext.WalletFile = walletFile;
+            new WalletContext().Database.Migrate();
 
             var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress), walletFile);
             var slackHandler = new SlackHandler(nxtConnector, logger);

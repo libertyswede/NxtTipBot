@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using NxtLib;
 using NxtLib.Accounts;
@@ -13,15 +12,8 @@ namespace NxtTipbot
 
         public NxtConnector(IServiceFactory serviceFactory, string walletfile)
         {
-            wallet = InitWallet(walletfile);
+            wallet = new WalletDb(walletfile);
             accountService = serviceFactory.CreateAccountService();
-        }
-
-        private WalletDb InitWallet(string walletfile)
-        {
-            var wallet = new WalletDb(walletfile);
-            wallet.Init();
-            return wallet;
         }
 
         public async Task<NxtAccount> GetAccount(string slackId)
@@ -43,7 +35,7 @@ namespace NxtTipbot
 
         public async Task<decimal> GetBalance(NxtAccount account)
         {
-            var balanceReply = await accountService.GetBalance(account.NxtAccountId);
+            var balanceReply = await accountService.GetBalance(account.NxtAccountRs);
             return balanceReply.UnconfirmedBalance.Nxt;
         }
 
