@@ -13,7 +13,7 @@ Written in .NET, with support for [.NET Standard 1.0](https://docs.microsoft.com
 5. Done!
 
 # Todo
-* Migrate database to Entity Framework 7 to avoid SQL injection issues.
+* ~~Migrate database to Entity Framework 7 to avoid SQL injection issues.~~
 * Add support for more units (USD, EUR, beer, etc.).
 * Add file logging (NLog).
 * Use AES 256 encryption for secret phrases.  
