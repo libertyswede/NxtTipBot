@@ -14,9 +14,11 @@ Written in .NET, with support for [.NET Standard 1.0](https://docs.microsoft.com
 
 # Todo
 * Migrate database to Entity Framework 7 to avoid SQL injection issues.
+* Add support for more units (USD, EUR, beer, etc.).
 * Add file logging (NLog).
 * Use AES 256 encryption for secret phrases.  
   Decryption key to be stored in config file/passed as parameter/read from environment variable.
 * Add new command 'initiate' where a public key is provided to initiate a new NXT address.
-* Support sending MS Currencies.
-* Support sending Assets.
+* Support sending MS Currencies (Nautiliscoin might be interested?).
+* Support sending Assets (SuperBTC for example).
+* Support for multiple slack teams.
