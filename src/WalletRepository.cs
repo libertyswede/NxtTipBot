@@ -6,7 +6,7 @@ namespace NxtTipbot
     public interface IWalletRepository
     {
         Task<NxtAccount> GetAccount(string slackId);
-        Task<NxtAccount> CreateAccount(string slackId, string secretPhrase, string addressRs);
+        Task<NxtAccount> AddAccount(NxtAccount account);
     }
 
     public class WalletRepository : IWalletRepository
@@ -20,11 +20,10 @@ namespace NxtTipbot
             }
         }
 
-        public async Task<NxtAccount> CreateAccount(string slackId, string secretPhrase, string addressRs)
+        public async Task<NxtAccount> AddAccount(NxtAccount account)
         {
             using (var context = new WalletContext())
             {
-                var account = new NxtAccount { SlackId = slackId, SecretPhrase = secretPhrase, NxtAccountRs = addressRs };
                 context.NxtAccounts.Add(account);
                 await context.SaveChangesAsync();
                 return account;

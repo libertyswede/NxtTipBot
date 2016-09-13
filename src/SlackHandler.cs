@@ -25,12 +25,14 @@ namespace NxtTipbot
         const string UnknownCommandReply = "huh? try typing *help* for a list of available commands.";
 
         private readonly INxtConnector nxtConnector;
+        private readonly IWalletRepository walletRepository;
         private readonly ILogger logger;
         public ISlackConnector SlackConnector { get; set; }
 
-        public SlackHandler(INxtConnector nxtConnector, ILogger logger)
+        public SlackHandler(INxtConnector nxtConnector, IWalletRepository walletRepository, ILogger logger)
         {
             this.nxtConnector = nxtConnector;
+            this.walletRepository = walletRepository;
             this.logger = logger;
         }
 
@@ -77,7 +79,7 @@ namespace NxtTipbot
 
         private async Task HandleBalanceCommand(User user, InstantMessage instantMessage)
         {
-            var account = await nxtConnector.GetAccount(user.Id);
+            var account = await walletRepository.GetAccount(user.Id);
             if (account == null)
             {
                 // This could be improved with a fancy "do you want to create new account" - button which exists in the Slack API.
@@ -92,10 +94,11 @@ namespace NxtTipbot
 
         private async Task HandleDepositCommand(User user, InstantMessage instantMessage)
         {
-            var account = await nxtConnector.GetAccount(user.Id);
+            var account = await walletRepository.GetAccount(user.Id);
             if (account == null)
             {
-                account = await nxtConnector.CreateAccount(user.Id);
+                account = nxtConnector.CreateAccount(user.Id);
+                await walletRepository.AddAccount(account);
                 var reply = $"I have created account with address: {account.NxtAccountRs} for you.\n"
                             + "Please do not deposit large amounts of NXT, as it is not a secure wallet like the core client or mynxt wallets.";
                 await SlackConnector.SendMessage(instantMessage.Id, reply);
@@ -108,7 +111,7 @@ namespace NxtTipbot
 
         private async Task HandleWithdrawCommand(User user, InstantMessage instantMessage, Match match)
         {
-            var account = await nxtConnector.GetAccount(user.Id);
+            var account = await walletRepository.GetAccount(user.Id);
             if (account == null)
             {
                 await SlackConnector.SendMessage(instantMessage.Id, "You do not have an account.");
@@ -179,7 +182,7 @@ namespace NxtTipbot
 
         private async Task HandleTipCommand(User user, Match match, Channel channel)
         {
-            var account = await nxtConnector.GetAccount(user.Id);
+            var account = await walletRepository.GetAccount(user.Id);
             if (account == null)
             {
                 const string reply =  "Sorry mate, you do not have an account. Try sending me *help* in a direct message and I'll help you out set one up.";
@@ -196,10 +199,11 @@ namespace NxtTipbot
                 await SlackConnector.SendMessage(channel.Id, "Not enough funds.");
                 return;
             }
-            var recipientAccount = await nxtConnector.GetAccount(recipientUser);
+            var recipientAccount = await walletRepository.GetAccount(recipientUser);
             if (recipientAccount == null)
             {
-                recipientAccount = await nxtConnector.CreateAccount(recipientUser);
+                recipientAccount = nxtConnector.CreateAccount(recipientUser);
+                await walletRepository.AddAccount(recipientAccount);
                 var imId = await SlackConnector.GetInstantMessageId(recipientUser);
                 var reply = $"Hi, you recieved a tip from <@{user.Id}>.\n" +
                             "So I have set up an account for you that you can use." +
