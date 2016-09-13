@@ -26,7 +26,8 @@ namespace NxtTipbot
             logger.LogInformation($"walletFile: {walletFile}");
 
             InitDatabase(walletFile);
-            var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress));
+            var walletRepository = new WalletRepository();
+            var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress), walletRepository);
             var slackHandler = new SlackHandler(nxtConnector, logger);
             var slackConnector = new SlackConnector(apiToken, logger, slackHandler);
             slackHandler.SlackConnector = slackConnector;
@@ -43,7 +44,7 @@ namespace NxtTipbot
             {
                 Directory.CreateDirectory(folder);
             }
-            WalletContext.WalletFile = walletFile;
+            WalletContext.WalletFile = walletFile; // this ain't pretty, fix when IoC is added
             new WalletContext().Database.Migrate();
         }
 

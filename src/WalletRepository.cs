@@ -3,7 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace NxtTipbot
 {
-    public class WalletRepository
+    public interface IWalletRepository
+    {
+        Task<NxtAccount> GetAccount(string slackId);
+        Task<NxtAccount> CreateAccount(string slackId, string secretPhrase, string addressRs);
+    }
+
+    public class WalletRepository : IWalletRepository
     {
         public async Task<NxtAccount> GetAccount(string slackId)
         {

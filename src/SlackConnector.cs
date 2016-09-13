@@ -12,11 +12,17 @@ using Newtonsoft.Json.Linq;
 
 namespace NxtTipbot
 {
-    public class SlackConnector
+    public interface ISlackConnector
+    {
+        Task SendMessage(string channelId, string message, bool unfurl_links = true);
+        Task<string> GetInstantMessageId(string userId);
+    }
+
+    public class SlackConnector : ISlackConnector
     {
         private readonly string apiToken;
         private readonly ILogger logger;
-        private readonly SlackHandler slackHandler;
+        private readonly ISlackHandler slackHandler;
 
         private string selfId;
         private List<Channel> channels;
@@ -25,7 +31,7 @@ namespace NxtTipbot
         private ClientWebSocket webSocket;
         private readonly UTF8Encoding encoder = new UTF8Encoding();
 
-        public SlackConnector(string apiToken, ILogger logger, SlackHandler slackHandler)
+        public SlackConnector(string apiToken, ILogger logger, ISlackHandler slackHandler)
         {
             this.logger = logger;
             this.apiToken = apiToken;

@@ -5,20 +5,28 @@ using NxtLib.Local;
 
 namespace NxtTipbot
 {
-    public class NxtConnector
+    public interface INxtConnector
     {
-        private readonly WalletRepository wallet;
+        Task<NxtAccount> GetAccount(string slackId);
+        Task<NxtAccount> CreateAccount(string slackId);
+        Task<decimal> GetBalance(NxtAccount account);
+        Task<ulong> SendMoney(NxtAccount account, string addressRs, Amount amount, string message);
+    }
+
+    public class NxtConnector : INxtConnector
+    {
+        private readonly IWalletRepository walletRepository;
         private readonly IAccountService accountService;
 
-        public NxtConnector(IServiceFactory serviceFactory)
+        public NxtConnector(IServiceFactory serviceFactory, IWalletRepository walletRepository)
         {
-            wallet = new WalletRepository();
+            this.walletRepository = walletRepository;
             accountService = serviceFactory.CreateAccountService();
         }
 
         public async Task<NxtAccount> GetAccount(string slackId)
         {
-            return await wallet.GetAccount(slackId);
+            return await walletRepository.GetAccount(slackId);
         }
 
         public async Task<NxtAccount> CreateAccount(string slackId)
@@ -29,7 +37,7 @@ namespace NxtTipbot
             var secretPhrase = localPasswordGenerator.GeneratePassword();
             var accountWithPublicKey = localAccountService.GetAccount(AccountIdLocator.BySecretPhrase(secretPhrase));
 
-            var account = await wallet.CreateAccount(slackId, secretPhrase, accountWithPublicKey.AccountRs);
+            var account = await walletRepository.CreateAccount(slackId, secretPhrase, accountWithPublicKey.AccountRs);
             return account;
         }
 

@@ -7,7 +7,13 @@ using NxtLib;
 
 namespace NxtTipbot
 {
-    public class SlackHandler
+    public interface ISlackHandler
+    {
+        Task InstantMessageRecieved(Message message, User user, InstantMessage instantMessage);
+        Task HandleTipBotChannelCommand(Message message, User user, Channel channel);
+    }
+
+    public class SlackHandler : ISlackHandler
     {
         const string HelpText = "*Direct Message Commands*\n"
             + "_balance_ - Wallet balance\n"
@@ -18,11 +24,11 @@ namespace NxtTipbot
             
         const string UnknownCommandReply = "huh? try typing *help* for a list of available commands.";
 
-        private readonly NxtConnector nxtConnector;
+        private readonly INxtConnector nxtConnector;
         private readonly ILogger logger;
-        public SlackConnector SlackConnector { get; set; }
+        public ISlackConnector SlackConnector { get; set; }
 
-        public SlackHandler(NxtConnector nxtConnector, ILogger logger)
+        public SlackHandler(INxtConnector nxtConnector, ILogger logger)
         {
             this.nxtConnector = nxtConnector;
             this.logger = logger;
