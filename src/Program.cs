@@ -27,8 +27,8 @@ namespace NxtTipbot
 
             InitDatabase(walletFile);
             var walletRepository = new WalletRepository();
-            var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress), walletRepository);
-            var slackHandler = new SlackHandler(nxtConnector, logger);
+            var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress));
+            var slackHandler = new SlackHandler(nxtConnector, walletRepository, logger);
             var slackConnector = new SlackConnector(apiToken, logger, slackHandler);
             slackHandler.SlackConnector = slackConnector;
 
