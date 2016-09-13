@@ -34,7 +34,7 @@ namespace NxtTipbot
 
             var slackTask = Task.Run(() => slackConnector.Run());
             Task.WaitAll(slackTask);
-            logger.LogInformation("Exiting program.");
+            logger.LogInformation("Exiting NxtTipbot");
         }
 
         private static void InitDatabase(string walletFile)
