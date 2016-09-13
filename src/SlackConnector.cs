@@ -98,9 +98,9 @@ namespace NxtTipbot
         private async Task HandleMessage(string json)
         {
             var message = JsonConvert.DeserializeObject<Message>(json);
-            var user = users.SingleOrDefault(u => u.Id == message.User);
-            var channel = channels.SingleOrDefault(c => c.Id == message.Channel);
-            var instantMessage = instantMessages.SingleOrDefault(im => im.Id == message.Channel);
+            var user = users.SingleOrDefault(u => u.Id == message.UserId);
+            var channel = channels.SingleOrDefault(c => c.Id == message.ChannelId);
+            var instantMessage = instantMessages.SingleOrDefault(im => im.Id == message.ChannelId);
             
             if (user != null && user.Id != selfId)
             {

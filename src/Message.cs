@@ -1,9 +1,14 @@
+using Newtonsoft.Json;
+
 namespace NxtTipbot
 {
     public class Message
     {
-        public string Channel { get; set; }
-        public string User { get; set; }
+        [JsonProperty(PropertyName = "channel")]
+        public string ChannelId { get; set; }
+
+        [JsonProperty(PropertyName = "user")]
+        public string UserId { get; set; }
         public string Text { get; set; }
     }
 }
