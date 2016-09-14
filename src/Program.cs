@@ -22,8 +22,10 @@ namespace NxtTipbot
             var apiToken = configSettings.Single(c => c.Key == "apitoken").Value;
             var walletFile = configSettings.Single(c => c.Key == "walletFile").Value;
             var nxtServerAddress = configSettings.Single(c => c.Key == "nxtServerAddress").Value;
+            var currencies = configSettings.SingleOrDefault(c => c.Key == "currencies")?.GetChildren();
             logger.LogInformation($"nxtServerAddress: {nxtServerAddress}");
             logger.LogInformation($"walletFile: {walletFile}");
+            currencies?.ToList().ForEach(c => logger.LogInformation($"currency: {c.Value}"));
 
             InitDatabase(walletFile);
             var walletRepository = new WalletRepository();
@@ -31,6 +33,14 @@ namespace NxtTipbot
             var slackHandler = new SlackHandler(nxtConnector, walletRepository, logger);
             var slackConnector = new SlackConnector(apiToken, logger, slackHandler);
             slackHandler.SlackConnector = slackConnector;
+
+            if (currencies != null)
+            {
+                foreach (var currencyId in currencies?.Select(c => ulong.Parse(c.Value)))
+                {
+                    Task.Run(() => slackHandler.AddCurrency(currencyId)).Wait();
+                }
+            }
 
             var slackTask = Task.Run(() => slackConnector.Run());
             Task.WaitAll(slackTask);
