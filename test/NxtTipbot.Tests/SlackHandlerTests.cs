@@ -22,7 +22,8 @@ namespace NxtTipbot.Tests
 
             await slackHandler.InstantMessageRecieved(command, null, instantMessage);
 
-            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, SlackHandler.HelpText, true));
+            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
+                It.Is<string>(input => input.StartsWith("*Direct Message Commands*")), true));
         }
     }
 }
