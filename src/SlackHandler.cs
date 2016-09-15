@@ -13,7 +13,7 @@ namespace NxtTipbot
     public interface ISlackHandler
     {
         Task InstantMessageRecieved(Message message, User user, InstantMessage instantMessage);
-        Task HandleTipBotChannelCommand(Message message, User user, Channel channel);
+        Task TipBotChannelCommand(Message message, User user, Channel channel);
         Task AddCurrency(ulong currencyId);
     }
 
@@ -56,15 +56,15 @@ namespace NxtTipbot
             {
                 await UnknownCommand(instantMessage);
             }
-            else if (IsSingleWordCommand("help", messageText))
+            else if (IsSingleWordCommand(messageText, "help"))
             {
                 await Help(instantMessage);
             }
-            else if (IsSingleWordCommand("balance", messageText))
+            else if (IsSingleWordCommand(messageText, "balance"))
             {
                 await Balance(user, instantMessage);
             }
-            else if (IsSingleWordCommand("deposit", messageText))
+            else if (IsSingleWordCommand(messageText, "deposit"))
             {
                 await Deposit(user, instantMessage);
             }
@@ -75,6 +75,21 @@ namespace NxtTipbot
             else
             {
                 await UnknownCommand(instantMessage);
+            }
+        }
+
+        public async Task TipBotChannelCommand(Message message, User user, Channel channel)
+        {
+            var messageText = message?.Text.Trim();
+            Match match = null;
+
+            if ((match = IsTipCommand(messageText)).Success)
+            {
+                await Tip(user, match, channel);
+            }
+            else
+            {
+                await SlackConnector.SendMessage(channel.Id, "huh? try sending me *help* in a direct message for a list of available commands.");
             }
         }
 
@@ -95,18 +110,16 @@ namespace NxtTipbot
             {
                 // This could be improved with a fancy "do you want to create new account" - button which exists in the Slack API.
                 await SlackConnector.SendMessage(instantMessage.Id, "You do currently not have an account, try *deposit* command to create one.");
+                return;
             }
-            else
+            var balance = await nxtConnector.GetBalance(account);
+            await SlackConnector.SendMessage(instantMessage.Id, $"Your current balance is {balance} NXT.");
+            foreach (var currency in currencies)
             {
-                var balance = await nxtConnector.GetBalance(account);
-                await SlackConnector.SendMessage(instantMessage.Id, $"Your current balance is {balance} NXT.");
-                foreach (var currency in currencies)
+                var currencyBalance = await nxtConnector.GetCurrencyBalance(currency.CurrencyId, account.NxtAccountRs);
+                if (currencyBalance > 0)
                 {
-                    var currencyBalance = await nxtConnector.GetCurrencyBalance(currency.CurrencyId, account.NxtAccountRs);
-                    if (currencyBalance > 0)
-                    {
-                        await SlackConnector.SendMessage(instantMessage.Id, $"You also have {currencyBalance} {currency.Code}.");
-                    }
+                    await SlackConnector.SendMessage(instantMessage.Id, $"You also have {currencyBalance} {currency.Code}.");
                 }
             }
         }
@@ -226,9 +239,9 @@ namespace NxtTipbot
             }
         }
 
-        private static bool IsSingleWordCommand(string command, string message)
+        private static bool IsSingleWordCommand(string message, string command)
         {
-            return message.Equals(command, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(message, command, StringComparison.OrdinalIgnoreCase);
         }
 
         private static Match IsWithdrawCommand(string message)
@@ -238,22 +251,7 @@ namespace NxtTipbot
             return match;
         }
 
-        public async Task HandleTipBotChannelCommand(Message message, User user, Channel channel)
-        {
-            var messageText = message?.Text.Trim();
-            Match match = null;
-
-            if ((match = IsTipCommand(messageText)).Success)
-            {
-                await HandleTipCommand(user, match, channel);
-            }
-            else
-            {
-                await SlackConnector.SendMessage(channel.Id, "huh? try sending me *help* in a direct message for a list of available commands.");
-            }
-        }
-
-        private async Task HandleTipCommand(User user, Match match, Channel channel)
+        private async Task Tip(User user, Match match, Channel channel)
         {
             var account = await walletRepository.GetAccount(user.Id);
             if (account == null)

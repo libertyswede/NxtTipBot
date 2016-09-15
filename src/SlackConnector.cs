@@ -112,7 +112,7 @@ namespace NxtTipbot
             {
                 if (channel != null && message.Text.StartsWith("tipbot"))
                 {
-                    await slackHandler.HandleTipBotChannelCommand(message, user, channel);
+                    await slackHandler.TipBotChannelCommand(message, user, channel);
                 }
                 else if (instantMessage != null)
                 {
