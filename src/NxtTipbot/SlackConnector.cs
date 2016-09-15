@@ -116,7 +116,7 @@ namespace NxtTipbot
                 }
                 else if (instantMessage != null)
                 {
-                    await slackHandler.InstantMessageRecieved(message, user, instantMessage);
+                    await slackHandler.InstantMessageRecieved(message.Text, user, instantMessage);
                 }
             }
         }

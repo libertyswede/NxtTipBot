@@ -12,21 +12,21 @@ namespace NxtTipbot
 {
     public interface ISlackHandler
     {
-        Task InstantMessageRecieved(Message message, User user, InstantMessage instantMessage);
+        Task InstantMessageRecieved(string message, User user, InstantMessage instantMessage);
         Task TipBotChannelCommand(Message message, User user, Channel channel);
         Task AddCurrency(ulong currencyId);
     }
 
     public class SlackHandler : ISlackHandler
     {
-        const string HelpText = "*Direct Message Commands*\n"
+        public const string HelpText = "*Direct Message Commands*\n"
             + "_balance_ - Wallet balance\n"
             + "_deposit_ - shows your deposit address (or creates one if you don't have one already)\n"
             + "_withdraw [nxt address] amount [unit]_ - withdraws amount to specified NXT address\n\n"
             + "*Channel Commands*\n"
             + "_tipbot tip @user amount [unit]_ - sends a tip to specified user";
             
-        const string UnknownCommandReply = "huh? try typing *help* for a list of available commands.";
+        public const string UnknownCommandReply = "huh? try typing *help* for a list of available commands.";
 
         private readonly INxtConnector nxtConnector;
         private readonly IWalletRepository walletRepository;
@@ -47,9 +47,9 @@ namespace NxtTipbot
             currencies.Add(currency);
         }
 
-        public async Task InstantMessageRecieved(Message message, User user, InstantMessage instantMessage)
+        public async Task InstantMessageRecieved(string message, User user, InstantMessage instantMessage)
         {
-            var messageText = message?.Text.Trim();
+            var messageText = message.Trim();
             Match match = null;
 
             if (string.IsNullOrEmpty(messageText))

@@ -5,11 +5,11 @@ Written in .NET, with support for [.NET Standard 1.0](https://docs.microsoft.com
 # How to install and run?
 1. Install [.NET Core](https://www.microsoft.com/net/core) for your platform.
 2. Download latest code of NxtTipbot
-3. Edit the config.json file in the src directory and set:
+3. Edit the config.json file in the src\NxtTipbot directory and set:
   * apitoken - Slack api token key.
   * walletFile - Path to where your Sqlite database file should be stored.
   * nxtServerAddress - The server address to the NXT server you wish to use.
-4. In the the src directory, type 'dotnet restore' and then 'dotnet run'
+4. In the the src\NxtTipbot directory, type 'dotnet restore' and then 'dotnet run'
 5. Done!
 
 # Todo
