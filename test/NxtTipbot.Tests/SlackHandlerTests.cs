@@ -59,5 +59,34 @@ namespace NxtTipbot.Tests
             slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
                 It.Is<string>(input => input.StartsWith($"Your current balance is {expectedBalance} NXT")), true));
         }
+
+        [Theory]
+        [InlineData("deposit")]
+        [InlineData(" DEPOSIT ")]
+        [InlineData("dEpOsIt ")]
+        public async void DepositShouldCreateAccount(string command)
+        {
+            var account = new NxtAccount{SlackId = this.user.Id};
+            walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(null);
+            nxtConnectorMock.Setup(c => c.CreateAccount(It.Is<string>(id => id == this.user.Id))).Returns(account);
+
+            await slackHandler.InstantMessageRecieved(command, user, instantMessage);
+
+            walletRepositoryMock.Verify(r => r.AddAccount(account));
+            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
+                It.Is<string>(input => input.StartsWith("I have created account")), true));
+        }
+
+        [Fact]
+        public async void DepositShouldReturnAddress()
+        {
+            var account = new NxtAccount{NxtAccountRs = "NXT-123"};
+            walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(account);
+
+            await slackHandler.InstantMessageRecieved("deposit", user, instantMessage);
+
+            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
+                It.Is<string>(input => input.Equals($"You can deposit NXT here: {account.NxtAccountRs}")), true));
+        }
     }
 }
