@@ -88,5 +88,19 @@ namespace NxtTipbot.Tests
             slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
                 It.Is<string>(input => input.Equals($"You can deposit NXT here: {account.NxtAccountRs}")), true));
         }
+
+        [Theory]
+        [InlineData("withdraw")]
+        [InlineData(" WITHDRAW ")]
+        [InlineData("wItHdRaW ")]
+        public async void WithdrawShouldReturnNoAccount(string command)
+        {
+            walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(null);
+
+            await slackHandler.InstantMessageRecieved($"{command} NXT-123 42", user, instantMessage);
+
+            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
+                It.Is<string>(input => input.Equals("You do not have an account.")), true));
+        }
     }
 }
