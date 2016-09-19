@@ -45,5 +45,19 @@ namespace NxtTipbot.Tests
             slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
                 It.Is<string>(input => input.StartsWith("You do currently not have an account")), true));
         }
+        
+        [Fact]
+        public async void BalanceShouldReturnCorrectBalance()
+        {
+            var account = new NxtAccount();
+            const decimal expectedBalance = 42M;
+            walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(account);
+            nxtConnectorMock.Setup(r => r.GetBalance(It.Is<NxtAccount>(a => a == account))).ReturnsAsync(expectedBalance);
+
+            await slackHandler.InstantMessageRecieved("balance", user, instantMessage);
+
+            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
+                It.Is<string>(input => input.StartsWith($"Your current balance is {expectedBalance} NXT")), true));
+        }
     }
 }
