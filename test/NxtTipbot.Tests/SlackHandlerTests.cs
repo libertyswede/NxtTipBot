@@ -91,8 +91,8 @@ namespace NxtTipbot.Tests
 
         [Theory]
         [InlineData("withdraw")]
-        [InlineData(" WITHDRAW ")]
-        [InlineData("wItHdRaW ")]
+        [InlineData(" WITHDRAW")]
+        [InlineData("wItHdRaW")]
         public async void WithdrawShouldReturnNoAccount(string command)
         {
             walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(null);
