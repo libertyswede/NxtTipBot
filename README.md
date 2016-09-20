@@ -1,6 +1,6 @@
 # Nxt Tipbot
 An NXT tip bot for slack API.  
-Written in .NET Core, with support for [.NET Standard 1.0](https://docs.microsoft.com/en-us/dotnet/articles/standard/library), making it cross platform (win, linux, os x). 
+Written in .NET Core, with support for [.NET Standard 1.0](https://docs.microsoft.com/en-us/dotnet/articles/standard/library), making it cross platform (win, linux, os x).  
 [.NET Core](https://www.microsoft.com/net/core/platform) is an open source development platform from Microsoft.
 
 # Features
