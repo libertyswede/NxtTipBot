@@ -20,6 +20,6 @@ Written in .NET, with support for [.NET Standard 1.0](https://docs.microsoft.com
   Decryption key to be stored in config file/passed as parameter/read from environment variable.
 * Unit tests
 * Add new command 'initiate' where a public key is provided to initiate a new NXT address.
-* Support sending MS Currencies (Nautiliscoin might be interested?).
+* ~~Support sending MS Currencies (Nautiliscoin might be interested?).~~
 * Support sending Assets (SuperBTC for example).
 * Support for multiple slack teams.
