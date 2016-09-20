@@ -1,6 +1,7 @@
 ﻿using Xunit;
 using Moq;
 using Microsoft.Extensions.Logging;
+using NxtLib.MonetarySystem;
 
 namespace NxtTipbot.Tests
 {
@@ -13,6 +14,12 @@ namespace NxtTipbot.Tests
         private readonly SlackHandler slackHandler;
         private readonly InstantMessage instantMessage = new InstantMessage { Id = "Id", UserId = "UserId" };
         private readonly User user = new User { Id = "UserId", Name = "XunitBot" };
+        private readonly Currency currency = new Currency
+        {
+            CurrencyId = 123,
+            Code = "TEST",
+            Decimals = 4
+        };
 
         public SlackHandlerTests()
         {
@@ -58,6 +65,21 @@ namespace NxtTipbot.Tests
 
             slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
                 It.Is<string>(input => input.Equals(MessageConstants.CurrentBalance(expectedBalance))), true));
+        }
+        
+        [Fact]
+        public async void BalanceShouldReturnCorrectCurrencyBalance()
+        {
+            var account = new NxtAccount();
+            const decimal expectedBalance = 42M;
+            slackHandler.AddCurrency(currency);
+            walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(account);
+            nxtConnectorMock.Setup(r => r.GetCurrencyBalance(It.IsAny<ulong>(), It.IsAny<string>())).ReturnsAsync(expectedBalance);
+
+            await slackHandler.InstantMessageRecieved("balance", user, instantMessage);
+
+            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
+                It.Is<string>(input => input.Equals(MessageConstants.CurrentCurrencyBalance(expectedBalance, currency.Code))), true));
         }
 
         [Theory]

@@ -38,7 +38,7 @@ namespace NxtTipbot
             {
                 foreach (var currencyId in currencies?.Select(c => ulong.Parse(c.Value)))
                 {
-                    Task.Run(() => slackHandler.AddCurrency(currencyId)).Wait();
+                    Task.Run(async () => slackHandler.AddCurrency(await nxtConnector.GetCurrency(currencyId))).Wait();
                 }
             }
 

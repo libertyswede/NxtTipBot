@@ -14,7 +14,7 @@ namespace NxtTipbot
     {
         Task InstantMessageRecieved(string message, User user, InstantMessage instantMessage);
         Task TipBotChannelCommand(Message message, User user, Channel channel);
-        Task AddCurrency(ulong currencyId);
+        void AddCurrency(Currency currency);
     }
 
     public class SlackHandler : ISlackHandler
@@ -33,9 +33,8 @@ namespace NxtTipbot
             this.logger = logger;
         }
 
-        public async Task AddCurrency(ulong currencyId)
+        public void AddCurrency(Currency currency)
         {
-            var currency = await nxtConnector.GetCurrency(currencyId);
             currencies.Add(currency);
         }
 
