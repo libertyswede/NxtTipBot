@@ -147,7 +147,7 @@ namespace NxtTipbot.Tests
             const string recipient = "NXT-123";
             const decimal balance = 400;
             const decimal withdrawAmount = 42;
-            const ulong txId = 928347;
+            const ulong txId = 928347; // true random number...
             walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(account);
             nxtConnectorMock.Setup(c => c.GetBalance(It.Is<NxtAccount>(a => a == account))).ReturnsAsync(balance);
             nxtConnectorMock.Setup(c => c.SendMoney(
@@ -161,6 +161,52 @@ namespace NxtTipbot.Tests
 
             slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
                 It.Is<string>(input => input.Equals(MessageConstants.Withdraw(withdrawAmount, "NXT", txId))), true));
+        }
+
+        [Fact]
+        public async void WithdrawShouldReturnUnknownUnit()
+        {
+            var account = new NxtAccount{NxtAccountRs = "NXT-123"};
+            const string unknownUnit = "UNKNOWNS";
+            walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(account);
+
+            await slackHandler.InstantMessageRecieved($"withdraw NXT-123 42 {unknownUnit}", user, instantMessage);
+
+            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
+                It.Is<string>(input => input.Equals(MessageConstants.UnknownUnit(unknownUnit))), true));
+        }
+
+        [Fact]
+        public async void WithdrawCurrencyShouldReturnNotEnoughNxtFunds()
+        {
+            var account = new NxtAccount{NxtAccountRs = "NXT-123"};
+            const decimal balance = 0.9M;
+            slackHandler.AddCurrency(currency);
+            walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(account);
+            nxtConnectorMock.Setup(c => c.GetBalance(It.Is<NxtAccount>(a => a == account))).ReturnsAsync(balance);
+
+            await slackHandler.InstantMessageRecieved($"withdraw NXT-123 42 {currency.Code}", user, instantMessage);
+
+            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFunds(balance, "NXT"))), true));
+        }
+
+        [Fact]
+        public async void WithdrawCurrencyShouldReturnNotEnoughCurrencyFunds()
+        {
+            var account = new NxtAccount{NxtAccountRs = "NXT-123"};
+            const decimal nxtBalance = 1M;
+            const decimal currencyBalance = 1M;
+            slackHandler.AddCurrency(currency);
+            walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(account);
+            nxtConnectorMock.Setup(c => c.GetBalance(It.Is<NxtAccount>(a => a == account))).ReturnsAsync(nxtBalance);
+            nxtConnectorMock.Setup(c => c.GetCurrencyBalance(It.Is<ulong>(cId => cId == currency.CurrencyId), It.Is<string>(a => a == account.NxtAccountRs)))
+                .ReturnsAsync(currencyBalance);
+
+            await slackHandler.InstantMessageRecieved($"withdraw NXT-123 42 {currency.Code}", user, instantMessage);
+
+            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFunds(currencyBalance, currency.Code))), true));
         }
     }
 }
