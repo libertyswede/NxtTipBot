@@ -2,6 +2,11 @@
 An NXT tip bot for slack API.  
 Written in .NET, with support for [.NET Standard 1.0](https://docs.microsoft.com/en-us/dotnet/articles/standard/library), making it cross platform (win, linux, os x).
 
+# Features
+* Make public tips in slack channels with NXT or MS Currencies
+* See your own balance/deposit/withdraw in direct messages with the bot
+* Help command
+
 # How to install and run?
 1. Install [.NET Core](https://www.microsoft.com/net/core) for your platform.
 2. Download latest code of NxtTipbot
@@ -13,9 +18,6 @@ Written in .NET, with support for [.NET Standard 1.0](https://docs.microsoft.com
 5. Done!
 
 # Todo
-* ~~Migrate database to Entity Framework 7 to avoid SQL injection issues.~~
-* ~~Unit tests~~
-* ~~Support sending MS Currencies.~~
 * Support sending Assets.
 * Add support for more units (USD, EUR, beer, etc.).
 * Add file logging (NLog).
