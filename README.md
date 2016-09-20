@@ -11,12 +11,16 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 # How to install and run?
 1. Install [.NET Core](https://www.microsoft.com/net/core) for your platform.
 2. Download latest code of NxtTipbot
-3. Edit the config.json file in the src\NxtTipbot directory and set:
+3. Edit the [config.json](src/NxtTipbot/config.json) file in the src/NxtTipbot directory and set:
   * apitoken - Slack api token key.
   * walletFile - Path to where your Sqlite database file should be stored.
   * nxtServerAddress - The server address to the NXT server you wish to use.
-4. In the the src\NxtTipbot directory, type 'dotnet restore' and then 'dotnet run'
+4. In the the src/NxtTipbot directory, type 'dotnet restore' and then 'dotnet run'
 5. Done!
+
+# How do I run the automated tests?
+1. Do the install steps above.
+2. In the test/NxtTipbot.Tests directory, type 'dotnet restore' and the 'dotnet test'
 
 # Todo
 * Support sending Assets.
