@@ -236,7 +236,7 @@ namespace NxtTipbot
 
         private static Match IsWithdrawCommand(string message)
         {
-            var regex = new Regex("^\\s*(?i)withdraw(?-i) (NXT-[A-Z0-9\\-]+) ([0-9\\.]+) ?([A-Za-z]+)?");
+            var regex = new Regex("^\\s*(?i)withdraw(?-i) (NXT-[A-Z0-9\\-]+) ([0-9]+\\.?[0-9]*) ?([A-Za-z]+)?");
             var match = regex.Match(message);
             return match;
         }
@@ -346,7 +346,7 @@ namespace NxtTipbot
 
         private static Match IsTipCommand(string message)
         {
-            var regex = new Regex("^tipbot tip <@([A-Za-z0-9]+)> ([0-9\\.]+)");
+            var regex = new Regex("^tipbot tip <@([A-Za-z0-9]+)> ([0-9]+\\.?[0-9]*)");
             var match = regex.Match(message);
             return match;
         }
