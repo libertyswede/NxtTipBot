@@ -124,5 +124,19 @@ namespace NxtTipbot.Tests
             slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
                 It.Is<string>(input => input.Equals(MessageConstants.NoAccount)), true));
         }
+
+        [Fact]
+        public async void WithdrawShouldReturnNotEnoughFunds()
+        {
+            var account = new NxtAccount{NxtAccountRs = "NXT-123"};
+            const decimal balance = 4;
+            walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(account);
+            nxtConnectorMock.Setup(c => c.GetBalance(It.Is<NxtAccount>(a => a == account))).ReturnsAsync(balance);
+
+            await slackHandler.InstantMessageRecieved("withdraw NXT-123 42", user, instantMessage);
+
+            slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFunds(balance, "NXT"))), true));
+        }
     }
 }
