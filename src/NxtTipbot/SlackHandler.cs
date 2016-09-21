@@ -346,7 +346,7 @@ namespace NxtTipbot
 
         private static Match IsTipCommand(string message)
         {
-            var regex = new Regex("^tipbot tip <@([A-Za-z0-9]+)> ([0-9]+\\.?[0-9]*)");
+            var regex = new Regex("^\\s*(?i)tipbot tip(?-i) <@([A-Za-z0-9]+)> ([0-9]+\\.?[0-9]*)");
             var match = regex.Match(message);
             return match;
         }
