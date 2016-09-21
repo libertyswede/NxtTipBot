@@ -12,7 +12,7 @@ namespace NxtTipbot
 {
     public interface ISlackHandler
     {
-        Task InstantMessageRecieved(string message, User user, InstantMessage instantMessage);
+        Task InstantMessageCommand(string message, User user, InstantMessage instantMessage);
         Task TipBotChannelCommand(Message message, User user, Channel channel);
         void AddCurrency(Currency currency);
     }
@@ -38,7 +38,7 @@ namespace NxtTipbot
             currencies.Add(currency);
         }
 
-        public async Task InstantMessageRecieved(string message, User user, InstantMessage instantMessage)
+        public async Task InstantMessageCommand(string message, User user, InstantMessage instantMessage)
         {
             var messageText = message.Trim();
             Match match = null;
