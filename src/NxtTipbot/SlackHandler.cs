@@ -205,7 +205,7 @@ namespace NxtTipbot
             }
             try
             {
-                var unitsToWithdraw = (long)(amountToWithdraw * currency.Decimals);
+                var unitsToWithdraw = (long)(amountToWithdraw * (long)Math.Pow(currency.Decimals, 10));
                 var txId = await nxtConnector.TransferCurrency(account, recipientAddressRs, currency.CurrencyId, unitsToWithdraw, "withdraw from slack tipbot");
                 var reply = MessageConstants.Withdraw(amountToWithdraw, currency.Code, txId);
                 await SlackConnector.SendMessage(instantMessage.Id, reply);
