@@ -62,7 +62,7 @@ namespace NxtTipbot
 
         private async Task Recieve()
         {
-            var buffer = new byte[1024];
+            var buffer = new byte[4096];
             while (webSocket.State == WebSocketState.Open)
             {
                 var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
@@ -151,7 +151,7 @@ namespace NxtTipbot
         {
             logger.LogTrace($"Sending chat.postMessage to channel id: {channelId}, message: {message}, unfurl_links: {unfurl_links}");
             using (var httpClient = new HttpClient())
-            using (var response = await httpClient.GetAsync($"https://slack.com/api/chat.postMessage?token={apiToken}&channel={channelId}&text={message}&unfurl_links={unfurl_links}"))
+            using (var response = await httpClient.GetAsync($"https://slack.com/api/chat.postMessage?token={apiToken}&channel={channelId}&text={message}&unfurl_links={unfurl_links}&as_user=true"))
             using (var content = response.Content)
             {
                 var json = await content.ReadAsStringAsync();
@@ -166,7 +166,7 @@ namespace NxtTipbot
             {
                 logger.LogTrace($"Requesting im.open with user {userId}");
                 using (var httpClient = new HttpClient())
-                using (var response = await httpClient.GetAsync($"https://slack.com/api/im.open?token={apiToken}&user={userId}"))
+                using (var response = await httpClient.GetAsync($"https://slack.com/api/im.open?token={apiToken}&user={userId}&as_user=true"))
                 using (var content = response.Content)
                 {
                     var json = await content.ReadAsStringAsync();
