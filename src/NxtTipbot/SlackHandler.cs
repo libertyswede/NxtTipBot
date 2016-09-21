@@ -168,7 +168,7 @@ namespace NxtTipbot
             try
             {
                 var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw from slack tipbot");
-                await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.Withdraw(amount.Nxt, unit, txId));
+                await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.Withdraw(amount.Nxt, unit, txId), false);
             }
             catch (ArgumentException e)
             {
@@ -205,10 +205,10 @@ namespace NxtTipbot
             }
             try
             {
-                var unitsToWithdraw = (long)(amountToWithdraw * (long)Math.Pow(currency.Decimals, 10));
+                var unitsToWithdraw = (long)(amountToWithdraw * (long)Math.Pow(Math.Max(currency.Decimals, (byte)1), 10));
                 var txId = await nxtConnector.TransferCurrency(account, recipientAddressRs, currency.CurrencyId, unitsToWithdraw, "withdraw from slack tipbot");
                 var reply = MessageConstants.Withdraw(amountToWithdraw, currency.Code, txId);
-                await SlackConnector.SendMessage(instantMessage.Id, reply);
+                await SlackConnector.SendMessage(instantMessage.Id, reply, false);
             }
             catch (ArgumentException e)
             {
@@ -316,10 +316,10 @@ namespace NxtTipbot
             }
             try
             {
-                var unitsToTip = (long)(amountToTip * (long)Math.Pow(currency.Decimals, 10));
+                var unitsToTip = (long)(amountToTip * (long)Math.Pow(Math.Max(currency.Decimals, (byte)1), 10));
                 var txId = await nxtConnector.TransferCurrency(account, recipientAccount.NxtAccountRs, currency.CurrencyId, unitsToTip, "slackbot tip");
                 var reply = MessageConstants.TipSentChannel(user.Id, recipientUserId, amountToTip, currency.Code, txId);
-                await SlackConnector.SendMessage(channel.Id, reply);
+                await SlackConnector.SendMessage(channel.Id, reply, false);
             }
             catch (ArgumentException e)
             {

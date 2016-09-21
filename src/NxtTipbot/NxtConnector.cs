@@ -1,4 +1,4 @@
-using System.Linq;
+using System;
 using System.Threading.Tasks;
 using NxtLib;
 using NxtLib.Accounts;
@@ -64,8 +64,7 @@ namespace NxtTipbot
         public async Task<decimal> GetCurrencyBalance(ulong currencyId, string addressRs)
         {
             var accountCurrencyReply = await monetarySystemService.GetAccountCurrencies(addressRs, currencyId, includeCurrencyInfo: true);
-            var accountCurrency = accountCurrencyReply.AccountCurrencies?.SingleOrDefault(c => c.CurrencyId == currencyId);
-            return accountCurrency != null ? (decimal)accountCurrency.UnconfirmedUnits / accountCurrency.Decimals : 0M;
+            return (decimal)accountCurrencyReply.UnconfirmedUnits / Math.Max(accountCurrencyReply.Decimals, (byte)1);
         }
 
         public async Task<ulong> TransferCurrency(NxtAccount account, string addressRs, ulong currencyId, long units, string message)
