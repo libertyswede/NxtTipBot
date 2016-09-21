@@ -167,7 +167,7 @@ namespace NxtTipbot.Tests
             await slackHandler.InstantMessageCommand($"withdraw {recipientAccount.NxtAccountRs} {withdrawAmount}{unit}", user, instantMessage);
 
             slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.Withdraw(withdrawAmount, "NXT", txId))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.Withdraw(withdrawAmount, "NXT", txId))), false));
         }
 
         [Fact]
@@ -229,7 +229,7 @@ namespace NxtTipbot.Tests
             await slackHandler.InstantMessageCommand($"withdraw {recipientAccount.NxtAccountRs} {withdrawAmount} {currency.Code}", user, instantMessage);
 
             slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.Withdraw(withdrawAmount, currency.Code, txId))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.Withdraw(withdrawAmount, currency.Code, txId))), false));
         }
 
         [Theory]
@@ -348,7 +348,7 @@ namespace NxtTipbot.Tests
             await slackHandler.TipBotChannelCommand(message, user, channel);
 
             slackConnectorMock.Verify(c => c.SendMessage(channel.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(user.Id, recipientAccount.SlackId, tipAmount, currency.Code, txId))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(user.Id, recipientAccount.SlackId, tipAmount, currency.Code, txId))), false));
         }
 
         private Message CreateChannelMessage(string text)
