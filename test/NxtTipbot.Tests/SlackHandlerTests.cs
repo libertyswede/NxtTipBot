@@ -148,8 +148,10 @@ namespace NxtTipbot.Tests
                 It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFunds(balance, "NXT"))), true));
         }
 
-        [Fact]
-        public async void WithdrawNxtShouldSucceed()
+        [Theory]
+        [InlineData("")]
+        [InlineData(" NXT")]
+        public async void WithdrawNxtShouldSucceed(string unit)
         {
             const decimal balance = 400;
             const decimal withdrawAmount = 42;
@@ -162,7 +164,7 @@ namespace NxtTipbot.Tests
                 It.IsAny<string>()))
                     .ReturnsAsync(txId);
 
-            await slackHandler.InstantMessageCommand($"withdraw {recipientAccount.NxtAccountRs} {withdrawAmount}", user, instantMessage);
+            await slackHandler.InstantMessageCommand($"withdraw {recipientAccount.NxtAccountRs} {withdrawAmount}{unit}", user, instantMessage);
 
             slackConnectorMock.Verify(c => c.SendMessage(instantMessage.Id, 
                 It.Is<string>(input => input.Equals(MessageConstants.Withdraw(withdrawAmount, "NXT", txId))), true));
@@ -258,8 +260,10 @@ namespace NxtTipbot.Tests
                 It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFunds(balance, "NXT"))), true));
         }
 
-        [Fact]
-        public async void TipNxtShouldSucceed()
+        [Theory]
+        [InlineData("")]
+        [InlineData(" NXT")]
+        public async void TipNxtShouldSucceed(string unit)
         {
             const decimal balance = 400;
             const decimal tipAmount = 42;
@@ -272,7 +276,7 @@ namespace NxtTipbot.Tests
                 It.Is<Amount>(a => a.Nxt == tipAmount), 
                 It.IsAny<string>()))
                     .ReturnsAsync(txId);
-            var message = CreateChannelMessage($"tipbot tip <@{recipientAccount.SlackId}> 42");
+            var message = CreateChannelMessage($"tipbot tip <@{recipientAccount.SlackId}> 42{unit}");
 
             await slackHandler.TipBotChannelCommand(message, user, channel);
 
