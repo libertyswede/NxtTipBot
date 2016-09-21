@@ -280,6 +280,19 @@ namespace NxtTipbot.Tests
                 It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(user.Id, recipientAccount.SlackId, tipAmount, "NXT", txId))), false));
         }
 
+        [Fact]
+        public async void TipShouldReturnUnknownUnit()
+        {
+            const string unknownUnit = "UNKNOWNS";
+            SetupNxtAccount(senderAccount, 1);
+            var message = CreateChannelMessage($"tipbot tip <@{recipientAccount.SlackId}> 42 {unknownUnit}");
+
+            await slackHandler.TipBotChannelCommand(message, user, channel);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channel.Id, 
+                It.Is<string>(input => input.Equals(MessageConstants.UnknownUnit(unknownUnit))), true));
+        }
+
         private Message CreateChannelMessage(string text)
         {
             return new Message

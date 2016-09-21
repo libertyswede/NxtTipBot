@@ -256,7 +256,15 @@ namespace NxtTipbot
 
             if (!string.Equals(unit, "NXT", StringComparison.OrdinalIgnoreCase))
             {
-                await TipCurrency(channel, user, unit, account, recipientUserId, amountToWithdraw);
+                var currency = currencies.SingleOrDefault(c => c.Code == unit);
+                if (currency != null)
+                {
+                    await TipCurrency(channel, user, currency, account, recipientUserId, amountToWithdraw);
+                }
+                else
+                {
+                    await SlackConnector.SendMessage(channel.Id, MessageConstants.UnknownUnit(unit));
+                }
                 return;
             }
 
@@ -290,14 +298,8 @@ namespace NxtTipbot
             }
         }
 
-        private async Task TipCurrency(Channel channel, User user, string unit, NxtAccount account, string recipientUserId, decimal amountToWithdraw)
+        private async Task TipCurrency(Channel channel, User user, Currency currency, NxtAccount account, string recipientUserId, decimal amountToWithdraw)
         {
-            var currency = currencies.SingleOrDefault(c => c.Code == unit);
-            if (currency == null)
-            {
-                await SlackConnector.SendMessage(channel.Id, MessageConstants.UnknownUnit(unit));
-                return;
-            }
             var nxtBalance = await nxtConnector.GetBalance(account);
             var currencyBalance = await nxtConnector.GetCurrencyBalance(currency.CurrencyId, account.NxtAccountRs);
             if (nxtBalance < 1)
@@ -307,7 +309,7 @@ namespace NxtTipbot
             }
             if (currencyBalance < amountToWithdraw)
             {
-                await SlackConnector.SendMessage(channel.Id, MessageConstants.NotEnoughFunds(currencyBalance, unit));
+                await SlackConnector.SendMessage(channel.Id, MessageConstants.NotEnoughFunds(currencyBalance, currency.Code));
                 return;
             }
             var recipientAccount = await walletRepository.GetAccount(recipientUserId);
@@ -322,7 +324,7 @@ namespace NxtTipbot
             {
                 var unitsToWithdraw = (long)(amountToWithdraw * currency.Decimals);
                 var txId = await nxtConnector.TransferCurrency(account, recipientAccount.NxtAccountRs, currency.CurrencyId, unitsToWithdraw, "slackbot tip");
-                var reply = MessageConstants.TipSentChannel(user.Id, recipientUserId, amountToWithdraw, unit, txId);
+                var reply = MessageConstants.TipSentChannel(user.Id, recipientUserId, amountToWithdraw, currency.Code, txId);
                 await SlackConnector.SendMessage(channel.Id, reply);
             }
             catch (ArgumentException e)
@@ -346,7 +348,7 @@ namespace NxtTipbot
 
         private static Match IsTipCommand(string message)
         {
-            var regex = new Regex("^\\s*(?i)tipbot tip(?-i) <@([A-Za-z0-9]+)> ([0-9]+\\.?[0-9]*)");
+            var regex = new Regex("^\\s*(?i)tipbot tip(?-i) <@([A-Za-z0-9]+)> ([0-9]+\\.?[0-9]*) ?([A-Za-z]+)?");
             var match = regex.Match(message);
             return match;
         }
