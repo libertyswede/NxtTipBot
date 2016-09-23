@@ -205,8 +205,7 @@ namespace NxtTipbot
             }
             try
             {
-                var unitsToWithdraw = (long)(amountToWithdraw * (long)Math.Pow(Math.Max(currency.Decimals, (byte)1), 10));
-                var txId = await nxtConnector.TransferCurrency(account, recipientAddressRs, currency.CurrencyId, unitsToWithdraw, "withdraw from slack tipbot");
+                var txId = await nxtConnector.TransferCurrency(account, recipientAddressRs, currency, amountToWithdraw, "withdraw from slack tipbot");
                 var reply = MessageConstants.Withdraw(amountToWithdraw, currency.Code, txId);
                 await SlackConnector.SendMessage(imSession.Id, reply, false);
             }
@@ -316,8 +315,7 @@ namespace NxtTipbot
             }
             try
             {
-                var unitsToTip = (long)(amountToTip * (long)Math.Pow(Math.Max(currency.Decimals, (byte)1), 10));
-                var txId = await nxtConnector.TransferCurrency(account, recipientAccount.NxtAccountRs, currency.CurrencyId, unitsToTip, "slackbot tip");
+                var txId = await nxtConnector.TransferCurrency(account, recipientAccount.NxtAccountRs, currency, amountToTip, "slackbot tip");
                 var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToTip, currency.Code, txId);
                 await SlackConnector.SendMessage(channelSession.Id, reply, false);
             }

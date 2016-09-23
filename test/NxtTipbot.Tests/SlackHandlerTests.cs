@@ -3,7 +3,6 @@ using Moq;
 using Microsoft.Extensions.Logging;
 using NxtLib.MonetarySystem;
 using NxtLib;
-using System;
 
 namespace NxtTipbot.Tests
 {
@@ -14,13 +13,13 @@ namespace NxtTipbot.Tests
         private readonly Mock<ILogger> loggerMock = new Mock<ILogger>();
         private readonly Mock<ISlackConnector> slackConnectorMock = new Mock<ISlackConnector>();
         private readonly SlackHandler slackHandler;
-        private readonly SlackIMSession imSession = new SlackIMSession { Id = "InstantMessageId", UserId = "UserId" };
-        private readonly SlackChannelSession channelSession = new SlackChannelSession { Id = "ChannelId", Name = "#general" };
-        private readonly SlackUser slackUser = new SlackUser { Id = "UserId", Name = "XunitBot" };
+        private readonly SlackIMSession imSession = new SlackIMSession { Id = "imSessionId", UserId = "SlackUserId" };
+        private readonly SlackChannelSession channelSession = new SlackChannelSession { Id = "channelSessionId", Name = "#general" };
+        private readonly SlackUser slackUser = new SlackUser { Id = "SlackUserId", Name = "XunitBot" };
         private readonly NxtAccount senderAccount = new NxtAccount
         {
             Id = 42,
-            SlackId = "UserId",
+            SlackId = "SlackUserId",
             SecretPhrase = "TopSecret",
             NxtAccountRs = "NXT-8MVA-XCVR-3JC9-2C7C3"
         };
@@ -221,8 +220,8 @@ namespace NxtTipbot.Tests
             nxtConnectorMock.Setup(c => c.TransferCurrency(
                 It.Is<NxtAccount>(a => a == senderAccount), 
                 It.Is<string>(r => r == recipientAccount.NxtAccountRs),
-                It.Is<ulong>(cId => cId == currency.CurrencyId),
-                It.Is<long>(units => units == (long)withdrawAmount * Math.Pow(currency.Decimals, 10)), 
+                It.Is<Currency>(curr => curr == currency),
+                It.Is<decimal>(amount => amount == withdrawAmount), 
                 It.IsAny<string>()))
                     .ReturnsAsync(txId);
 
@@ -340,8 +339,8 @@ namespace NxtTipbot.Tests
             nxtConnectorMock.Setup(c => c.TransferCurrency(
                 It.Is<NxtAccount>(a => a == senderAccount), 
                 It.Is<string>(r => r == recipientAccount.NxtAccountRs),
-                It.Is<ulong>(cId => cId == currency.CurrencyId),
-                It.Is<long>(units => units == (long)tipAmount * Math.Pow(currency.Decimals, 10)), 
+                It.Is<Currency>(curr => curr == currency),
+                It.Is<decimal>(amount => amount == tipAmount), 
                 It.IsAny<string>()))
                     .ReturnsAsync(txId);
 

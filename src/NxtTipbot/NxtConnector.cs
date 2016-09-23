@@ -14,7 +14,7 @@ namespace NxtTipbot
         Task<ulong> SendMoney(NxtAccount account, string addressRs, Amount amount, string message);
         Task<Currency> GetCurrency(ulong currencyId);
         Task<decimal> GetCurrencyBalance(ulong currencyId, string addressRs);
-        Task<ulong> TransferCurrency(NxtAccount account, string addressRs, ulong currencyId, long units, string message);
+        Task<ulong> TransferCurrency(NxtAccount account, string addressRs, Currency currency, decimal amount, string message);
     }
 
     public class NxtConnector : INxtConnector
@@ -67,11 +67,12 @@ namespace NxtTipbot
             return (decimal)accountCurrencyReply.UnconfirmedUnits / Math.Max(accountCurrencyReply.Decimals, (byte)1);
         }
 
-        public async Task<ulong> TransferCurrency(NxtAccount account, string addressRs, ulong currencyId, long units, string message)
+        public async Task<ulong> TransferCurrency(NxtAccount account, string addressRs, Currency currency, decimal amount, string message)
         {
             var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, account.SecretPhrase);
             parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true);
-            var transferCurrencyReply = await monetarySystemService.TransferCurrency(addressRs, currencyId, units, parameters);
+            var units = (long)(amount * (long)Math.Pow(Math.Max(currency.Decimals, (byte)1), 10));
+            var transferCurrencyReply = await monetarySystemService.TransferCurrency(addressRs, currency.CurrencyId, units, parameters);
 
             return transferCurrencyReply.TransactionId.Value;
         }
