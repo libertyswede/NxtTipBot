@@ -107,7 +107,7 @@ namespace NxtTipbot
             await SlackConnector.SendMessage(imSession.Id, MessageConstants.CurrentBalance(balance));
             foreach (var currency in currencies)
             {
-                var currencyBalance = await nxtConnector.GetCurrencyBalance(currency.CurrencyId, account.NxtAccountRs);
+                var currencyBalance = await nxtConnector.GetCurrencyBalance(currency, account.NxtAccountRs);
                 if (currencyBalance > 0)
                 {
                     await SlackConnector.SendMessage(imSession.Id, MessageConstants.CurrentCurrencyBalance(currencyBalance, currency.Code));
@@ -192,7 +192,7 @@ namespace NxtTipbot
         private async Task WithdrawCurrency(SlackIMSession imSession, Currency currency, NxtAccount account, string recipientAddressRs, decimal amountToWithdraw)
         {
             var nxtBalance = await nxtConnector.GetBalance(account);
-            var currencyBalance = await nxtConnector.GetCurrencyBalance(currency.CurrencyId, account.NxtAccountRs);
+            var currencyBalance = await nxtConnector.GetCurrencyBalance(currency, account.NxtAccountRs);
             if (nxtBalance < 1)
             {
                 await SlackConnector.SendMessage(imSession.Id, MessageConstants.NotEnoughFunds(nxtBalance, "NXT"));
@@ -297,7 +297,7 @@ namespace NxtTipbot
         private async Task TipCurrency(SlackChannelSession channelSession, SlackUser slackUser, Currency currency, NxtAccount account, string recipientUserId, decimal amountToTip)
         {
             var nxtBalance = await nxtConnector.GetBalance(account);
-            var currencyBalance = await nxtConnector.GetCurrencyBalance(currency.CurrencyId, account.NxtAccountRs);
+            var currencyBalance = await nxtConnector.GetCurrencyBalance(currency, account.NxtAccountRs);
             if (nxtBalance < 1)
             {
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NotEnoughFunds(nxtBalance, "NXT"));

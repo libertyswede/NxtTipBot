@@ -13,7 +13,7 @@ namespace NxtTipbot
         Task<decimal> GetBalance(NxtAccount account);
         Task<ulong> SendMoney(NxtAccount account, string addressRs, Amount amount, string message);
         Task<Currency> GetCurrency(ulong currencyId);
-        Task<decimal> GetCurrencyBalance(ulong currencyId, string addressRs);
+        Task<decimal> GetCurrencyBalance(Currency currency, string addressRs);
         Task<ulong> TransferCurrency(NxtAccount account, string addressRs, Currency currency, decimal amount, string message);
     }
 
@@ -61,10 +61,10 @@ namespace NxtTipbot
             return currencyReply;
         }
 
-        public async Task<decimal> GetCurrencyBalance(ulong currencyId, string addressRs)
+        public async Task<decimal> GetCurrencyBalance(Currency currency, string addressRs)
         {
-            var accountCurrencyReply = await monetarySystemService.GetAccountCurrencies(addressRs, currencyId, includeCurrencyInfo: true);
-            return (decimal)accountCurrencyReply.UnconfirmedUnits / Math.Max(accountCurrencyReply.Decimals, (byte)1);
+            var accountCurrencyReply = await monetarySystemService.GetAccountCurrencies(addressRs, currency.CurrencyId);
+            return (decimal)accountCurrencyReply.UnconfirmedUnits / Math.Max(currency.Decimals, (byte)1);
         }
 
         public async Task<ulong> TransferCurrency(NxtAccount account, string addressRs, Currency currency, decimal amount, string message)

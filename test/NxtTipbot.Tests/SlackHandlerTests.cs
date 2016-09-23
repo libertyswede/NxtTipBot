@@ -370,7 +370,7 @@ namespace NxtTipbot.Tests
         {
             slackHandler.AddCurrency(c);
             nxtConnectorMock.Setup(connector => connector.GetCurrencyBalance(
-                It.Is<ulong>(cId => cId == c.CurrencyId), 
+                It.Is<Currency>(currency => currency == c), 
                 It.Is<string>(a => a == accountRs)))
                     .ReturnsAsync(currencyBalance);
         }
