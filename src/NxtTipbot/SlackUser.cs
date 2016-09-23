@@ -1,6 +1,6 @@
 namespace NxtTipbot
 {
-    public class User
+    public class SlackUser
     {
         public string Id { get; set; }
         public string Name { get; set; }

@@ -12,8 +12,8 @@ namespace NxtTipbot
 {
     public interface ISlackHandler
     {
-        Task InstantMessageCommand(string message, User user, InstantMessage instantMessage);
-        Task TipBotChannelCommand(Message message, User user, Channel channel);
+        Task InstantMessageCommand(string message, SlackUser slackUser, SlackIMSession imSession);
+        Task TipBotChannelCommand(SlackMessage message, SlackUser slackUser, SlackChannelSession channelSession);
         void AddCurrency(Currency currency);
     }
 
@@ -38,104 +38,104 @@ namespace NxtTipbot
             currencies.Add(currency);
         }
 
-        public async Task InstantMessageCommand(string message, User user, InstantMessage instantMessage)
+        public async Task InstantMessageCommand(string message, SlackUser slackUser, SlackIMSession imSession)
         {
             var messageText = message.Trim();
             Match match = null;
 
             if (string.IsNullOrEmpty(messageText))
             {
-                await UnknownCommand(instantMessage);
+                await UnknownCommand(imSession);
             }
             else if (IsSingleWordCommand(messageText, "help"))
             {
-                await Help(instantMessage);
+                await Help(imSession);
             }
             else if (IsSingleWordCommand(messageText, "balance"))
             {
-                await Balance(user, instantMessage);
+                await Balance(slackUser, imSession);
             }
             else if (IsSingleWordCommand(messageText, "deposit"))
             {
-                await Deposit(user, instantMessage);
+                await Deposit(slackUser, imSession);
             }
             else if ((match = IsWithdrawCommand(messageText)).Success)
             {
-                await Withdraw(user, instantMessage, match);
+                await Withdraw(slackUser, imSession, match);
             }
             else
             {
-                await UnknownCommand(instantMessage);
+                await UnknownCommand(imSession);
             }
         }
 
-        public async Task TipBotChannelCommand(Message message, User user, Channel channel)
+        public async Task TipBotChannelCommand(SlackMessage message, SlackUser slackUser, SlackChannelSession channelSession)
         {
             var messageText = message?.Text.Trim();
             Match match = null;
 
             if ((match = IsTipCommand(messageText)).Success)
             {
-                await Tip(user, match, channel);
+                await Tip(slackUser, match, channelSession);
             }
             else
             {
-                await SlackConnector.SendMessage(channel.Id, MessageConstants.UnknownChannelCommandReply);
+                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.UnknownChannelCommandReply);
             }
         }
 
-        private async Task UnknownCommand(InstantMessage instantMessage)
+        private async Task UnknownCommand(SlackIMSession imSession)
         {
-            await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.UnknownCommandReply);
+            await SlackConnector.SendMessage(imSession.Id, MessageConstants.UnknownCommandReply);
         }
 
-        private async Task Help(InstantMessage instantMessage)
+        private async Task Help(SlackIMSession imSession)
         {
-            await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.HelpText);
+            await SlackConnector.SendMessage(imSession.Id, MessageConstants.HelpText);
         }
 
-        private async Task Balance(User user, InstantMessage instantMessage)
+        private async Task Balance(SlackUser slackUser, SlackIMSession imSession)
         {
-            var account = await walletRepository.GetAccount(user.Id);
+            var account = await walletRepository.GetAccount(slackUser.Id);
             if (account == null)
             {
                 // This could be improved with a fancy "do you want to create new account" - button which exists in the Slack API.
-                await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.NoAccount);
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.NoAccount);
                 return;
             }
             var balance = await nxtConnector.GetBalance(account);
-            await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.CurrentBalance(balance));
+            await SlackConnector.SendMessage(imSession.Id, MessageConstants.CurrentBalance(balance));
             foreach (var currency in currencies)
             {
                 var currencyBalance = await nxtConnector.GetCurrencyBalance(currency.CurrencyId, account.NxtAccountRs);
                 if (currencyBalance > 0)
                 {
-                    await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.CurrentCurrencyBalance(currencyBalance, currency.Code));
+                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.CurrentCurrencyBalance(currencyBalance, currency.Code));
                 }
             }
         }
 
-        private async Task Deposit(User user, InstantMessage instantMessage)
+        private async Task Deposit(SlackUser slackUser, SlackIMSession imSession)
         {
-            var account = await walletRepository.GetAccount(user.Id);
+            var account = await walletRepository.GetAccount(slackUser.Id);
             if (account == null)
             {
-                account = nxtConnector.CreateAccount(user.Id);
+                account = nxtConnector.CreateAccount(slackUser.Id);
                 await walletRepository.AddAccount(account);
-                await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.AccountCreated(account.NxtAccountRs));
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.AccountCreated(account.NxtAccountRs));
             }
             else
             {
-                await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.DepositAddress(account.NxtAccountRs));
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.DepositAddress(account.NxtAccountRs));
             }
         }
 
-        private async Task Withdraw(User user, InstantMessage instantMessage, Match match)
+        private async Task Withdraw(SlackUser slackUser, SlackIMSession imSession, Match match)
         {
-            var account = await walletRepository.GetAccount(user.Id);
+            var account = await walletRepository.GetAccount(slackUser.Id);
             if (account == null)
             {
-                await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.NoAccount);
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.NoAccount);
                 return;
             }
 
@@ -148,11 +148,11 @@ namespace NxtTipbot
                 var currency = currencies.SingleOrDefault(c => c.Code == unit);
                 if (currency != null)
                 {
-                    await WithdrawCurrency(instantMessage, currency, account, address, amountToWithdraw);
+                    await WithdrawCurrency(imSession, currency, account, address, amountToWithdraw);
                 }
                 else
                 {
-                    await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.UnknownUnit(unit));
+                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.UnknownUnit(unit));
                 }
                 return;
             }
@@ -161,20 +161,20 @@ namespace NxtTipbot
             var balance = await nxtConnector.GetBalance(account);
             if (balance < amount.Nxt + Amount.OneNxt.Nxt)
             {
-                await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.NotEnoughFunds(balance, unit));
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.NotEnoughFunds(balance, unit));
                 return;
             }
 
             try
             {
                 var txId = await nxtConnector.SendMoney(account, address, amount, "withdraw from slack tipbot");
-                await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.Withdraw(amount.Nxt, unit, txId), false);
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.Withdraw(amount.Nxt, unit, txId), false);
             }
             catch (ArgumentException e)
             {
                 if (e.Message.Contains("not a valid reed solomon address"))
                 {
-                    await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.InvalidAddress);
+                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.InvalidAddress);
                 }
                 else
                 {
@@ -189,18 +189,18 @@ namespace NxtTipbot
             }
         }
 
-        private async Task WithdrawCurrency(InstantMessage instantMessage, Currency currency, NxtAccount account, string recipientAddressRs, decimal amountToWithdraw)
+        private async Task WithdrawCurrency(SlackIMSession imSession, Currency currency, NxtAccount account, string recipientAddressRs, decimal amountToWithdraw)
         {
             var nxtBalance = await nxtConnector.GetBalance(account);
             var currencyBalance = await nxtConnector.GetCurrencyBalance(currency.CurrencyId, account.NxtAccountRs);
             if (nxtBalance < 1)
             {
-                await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.NotEnoughFunds(nxtBalance, "NXT"));
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.NotEnoughFunds(nxtBalance, "NXT"));
                 return;
             }
             if (currencyBalance < amountToWithdraw)
             {
-                await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.NotEnoughFunds(currencyBalance, currency.Code));
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.NotEnoughFunds(currencyBalance, currency.Code));
                 return;
             }
             try
@@ -208,13 +208,13 @@ namespace NxtTipbot
                 var unitsToWithdraw = (long)(amountToWithdraw * (long)Math.Pow(Math.Max(currency.Decimals, (byte)1), 10));
                 var txId = await nxtConnector.TransferCurrency(account, recipientAddressRs, currency.CurrencyId, unitsToWithdraw, "withdraw from slack tipbot");
                 var reply = MessageConstants.Withdraw(amountToWithdraw, currency.Code, txId);
-                await SlackConnector.SendMessage(instantMessage.Id, reply, false);
+                await SlackConnector.SendMessage(imSession.Id, reply, false);
             }
             catch (ArgumentException e)
             {
                 if (e.Message.Contains("not a valid reed solomon address"))
                 {
-                    await SlackConnector.SendMessage(instantMessage.Id, MessageConstants.InvalidAddress);
+                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.InvalidAddress);
                 }
                 else
                 {
@@ -241,12 +241,12 @@ namespace NxtTipbot
             return match;
         }
 
-        private async Task Tip(User user, Match match, Channel channel)
+        private async Task Tip(SlackUser slackUser, Match match, SlackChannelSession channelSession)
         {
-            var account = await walletRepository.GetAccount(user.Id);
+            var account = await walletRepository.GetAccount(slackUser.Id);
             if (account == null)
             {
-                await SlackConnector.SendMessage(channel.Id, MessageConstants.NoAccountChannel);
+                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NoAccountChannel);
                 return;
             }
 
@@ -259,11 +259,11 @@ namespace NxtTipbot
                 var currency = currencies.SingleOrDefault(c => c.Code == unit);
                 if (currency != null)
                 {
-                    await TipCurrency(channel, user, currency, account, recipientUserId, amountToWithdraw);
+                    await TipCurrency(channelSession, slackUser, currency, account, recipientUserId, amountToWithdraw);
                 }
                 else
                 {
-                    await SlackConnector.SendMessage(channel.Id, MessageConstants.UnknownUnit(unit));
+                    await SlackConnector.SendMessage(channelSession.Id, MessageConstants.UnknownUnit(unit));
                 }
                 return;
             }
@@ -273,20 +273,20 @@ namespace NxtTipbot
             var balance = await nxtConnector.GetBalance(account);
             if (balance < amount.Nxt + Amount.OneNxt.Nxt)
             {
-                await SlackConnector.SendMessage(channel.Id, MessageConstants.NotEnoughFunds(balance, unit));
+                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NotEnoughFunds(balance, unit));
                 return;
             }
             var recipientAccount = await walletRepository.GetAccount(recipientUserId);
             if (recipientAccount == null)
             {
-                recipientAccount = await SendTipRecievedInstantMessage(user, recipientUserId);
+                recipientAccount = await SendTipRecievedInstantMessage(slackUser, recipientUserId);
             }
 
             try
             {
                 var txId = await nxtConnector.SendMoney(account, recipientAccount.NxtAccountRs, amount, "slackbot tip");
-                var reply = MessageConstants.TipSentChannel(user.Id, recipientUserId, amount.Nxt, unit, txId);
-                await SlackConnector.SendMessage(channel.Id, reply, false);
+                var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amount.Nxt, unit, txId);
+                await SlackConnector.SendMessage(channelSession.Id, reply, false);
             }
             catch (NxtException e)
             {
@@ -295,37 +295,37 @@ namespace NxtTipbot
             }
         }
 
-        private async Task TipCurrency(Channel channel, User user, Currency currency, NxtAccount account, string recipientUserId, decimal amountToTip)
+        private async Task TipCurrency(SlackChannelSession channelSession, SlackUser slackUser, Currency currency, NxtAccount account, string recipientUserId, decimal amountToTip)
         {
             var nxtBalance = await nxtConnector.GetBalance(account);
             var currencyBalance = await nxtConnector.GetCurrencyBalance(currency.CurrencyId, account.NxtAccountRs);
             if (nxtBalance < 1)
             {
-                await SlackConnector.SendMessage(channel.Id, MessageConstants.NotEnoughFunds(nxtBalance, "NXT"));
+                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NotEnoughFunds(nxtBalance, "NXT"));
                 return;
             }
             if (currencyBalance < amountToTip)
             {
-                await SlackConnector.SendMessage(channel.Id, MessageConstants.NotEnoughFunds(currencyBalance, currency.Code));
+                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NotEnoughFunds(currencyBalance, currency.Code));
                 return;
             }
             var recipientAccount = await walletRepository.GetAccount(recipientUserId);
             if (recipientAccount == null)
             {
-                recipientAccount = await SendTipRecievedInstantMessage(user, recipientUserId);
+                recipientAccount = await SendTipRecievedInstantMessage(slackUser, recipientUserId);
             }
             try
             {
                 var unitsToTip = (long)(amountToTip * (long)Math.Pow(Math.Max(currency.Decimals, (byte)1), 10));
                 var txId = await nxtConnector.TransferCurrency(account, recipientAccount.NxtAccountRs, currency.CurrencyId, unitsToTip, "slackbot tip");
-                var reply = MessageConstants.TipSentChannel(user.Id, recipientUserId, amountToTip, currency.Code, txId);
-                await SlackConnector.SendMessage(channel.Id, reply, false);
+                var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToTip, currency.Code, txId);
+                await SlackConnector.SendMessage(channelSession.Id, reply, false);
             }
             catch (ArgumentException e)
             {
                 if (e.Message.Contains("not a valid reed solomon address"))
                 {
-                    await SlackConnector.SendMessage(channel.Id, MessageConstants.InvalidAddress);
+                    await SlackConnector.SendMessage(channelSession.Id, MessageConstants.InvalidAddress);
                 }
                 else
                 {
@@ -340,12 +340,12 @@ namespace NxtTipbot
             }
         }
 
-        private async Task<NxtAccount> SendTipRecievedInstantMessage(User user, string recipientUserId)
+        private async Task<NxtAccount> SendTipRecievedInstantMessage(SlackUser slackUser, string recipientUserId)
         {
             var recipientAccount = nxtConnector.CreateAccount(recipientUserId);
             await walletRepository.AddAccount(recipientAccount);
             var imId = await SlackConnector.GetInstantMessageId(recipientUserId);
-            await SlackConnector.SendMessage(imId, MessageConstants.TipRecieved(user.Id));
+            await SlackConnector.SendMessage(imId, MessageConstants.TipRecieved(slackUser.Id));
             return recipientAccount;
         }
 

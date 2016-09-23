@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace NxtTipbot
 {
-    public class InstantMessage
+    public class SlackIMSession
     {
         public string Id { get; set; }
 

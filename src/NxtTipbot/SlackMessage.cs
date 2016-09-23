@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace NxtTipbot
 {
-    public class Message
+    public class SlackMessage
     {
         [JsonProperty(PropertyName = "channel")]
         public string ChannelId { get; set; }

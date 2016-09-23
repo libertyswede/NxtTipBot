@@ -25,9 +25,9 @@ namespace NxtTipbot
         private readonly ISlackHandler slackHandler;
 
         private string selfId;
-        private List<Channel> channels;
-        private List<User> users;
-        private List<InstantMessage> instantMessages;
+        private List<SlackChannelSession> channelSessions;
+        private List<SlackUser> slackUsers;
+        private List<SlackIMSession> imSessions;
         private ClientWebSocket webSocket;
         private readonly UTF8Encoding encoder = new UTF8Encoding();
 
@@ -50,9 +50,9 @@ namespace NxtTipbot
                 var jObject = JObject.Parse(json);
                 websocketUri = (string)jObject["url"];
                 selfId = (string)jObject["self"]["id"];
-                channels = JsonConvert.DeserializeObject<List<Channel>>(jObject["channels"].ToString());
-                users = JsonConvert.DeserializeObject<List<User>>(jObject["users"].ToString());
-                instantMessages = JsonConvert.DeserializeObject<List<InstantMessage>>(jObject["ims"].ToString());
+                channelSessions = JsonConvert.DeserializeObject<List<SlackChannelSession>>(jObject["channels"].ToString());
+                slackUsers = JsonConvert.DeserializeObject<List<SlackUser>>(jObject["users"].ToString());
+                imSessions = JsonConvert.DeserializeObject<List<SlackIMSession>>(jObject["ims"].ToString());
             }
 
             webSocket = new ClientWebSocket();            
@@ -87,7 +87,7 @@ namespace NxtTipbot
                         case "message": await HandleMessage(json);
                             break;
                         
-                        case "im_created": HandleIMCreated(jObject);
+                        case "im_created": HandleIMSessionCreated(jObject);
                             break;
                         case "channel_created": HandleChannelCreated(jObject);
                             break;
@@ -103,42 +103,42 @@ namespace NxtTipbot
 
         private async Task HandleMessage(string json)
         {
-            var message = JsonConvert.DeserializeObject<Message>(json);
-            var user = users.SingleOrDefault(u => u.Id == message.UserId);
-            var channel = channels.SingleOrDefault(c => c.Id == message.ChannelId);
-            var instantMessage = instantMessages.SingleOrDefault(im => im.Id == message.ChannelId);
+            var message = JsonConvert.DeserializeObject<SlackMessage>(json);
+            var slackUser = slackUsers.SingleOrDefault(u => u.Id == message.UserId);
+            var channel = channelSessions.SingleOrDefault(c => c.Id == message.ChannelId);
+            var instantMessage = imSessions.SingleOrDefault(im => im.Id == message.ChannelId);
             
-            if (user != null && user.Id != selfId)
+            if (slackUser != null && slackUser.Id != selfId)
             {
                 if (channel != null && message.Text.StartsWith("tipbot"))
                 {
-                    await slackHandler.TipBotChannelCommand(message, user, channel);
+                    await slackHandler.TipBotChannelCommand(message, slackUser, channel);
                 }
                 else if (instantMessage != null)
                 {
-                    await slackHandler.InstantMessageCommand(message.Text, user, instantMessage);
+                    await slackHandler.InstantMessageCommand(message.Text, slackUser, instantMessage);
                 }
             }
         }
 
-        private void HandleIMCreated(JObject jObject)
+        private void HandleIMSessionCreated(JObject jObject)
         {
-            var instantMessage = new InstantMessage
+            var imSession = new SlackIMSession
             {
                 Id = (string)jObject["channel"]["id"],
                 UserId = (string)jObject["user"]
             };
-            instantMessages.Add(instantMessage);
+            imSessions.Add(imSession);
 
-            var user = users.Single(u => u.Id == instantMessage.UserId);
-            logger.LogTrace($"IM with user {user.Name} was created.");
+            var slackUser = slackUsers.Single(u => u.Id == imSession.UserId);
+            logger.LogTrace($"IM session with user {slackUser.Name} was created.");
         }
 
         private void HandleChannelCreated(JObject jObject)
         {
-            var channel = JsonConvert.DeserializeObject<Channel>(jObject["channel"].ToString());
-            channels.Add(channel);
-            logger.LogTrace($"#{channel.Name} was created.");
+            var channelSession = JsonConvert.DeserializeObject<SlackChannelSession>(jObject["channel"].ToString());
+            channelSessions.Add(channelSession);
+            logger.LogTrace($"#{channelSession.Name} was created.");
         }
 
         private void HandleNullType(JObject jObject, string json)
@@ -161,7 +161,7 @@ namespace NxtTipbot
 
         public async Task<string> GetInstantMessageId(string userId)
         {
-            var id = instantMessages.SingleOrDefault(im => im.UserId == userId)?.Id;
+            var id = imSessions.SingleOrDefault(im => im.UserId == userId)?.Id;
             if (id == null)
             {
                 logger.LogTrace($"Requesting im.open with user {userId}");
@@ -173,7 +173,7 @@ namespace NxtTipbot
                     logger.LogTrace($"Reply from request to im.open: {json}");
                     var jObject = JObject.Parse(json);
                     id = (string)jObject["channel"]["id"];
-                    instantMessages.Add(new InstantMessage {Id = id, UserId = userId});
+                    imSessions.Add(new SlackIMSession {Id = id, UserId = userId});
                 }
             }
             return id;
