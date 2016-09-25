@@ -99,7 +99,7 @@ namespace NxtTipbot.Tests
             await slackHandler.InstantMessageCommand("balance", slackUser, imSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.CurrentBalance(expectedBalance, currency.Code))), true));
+                It.Is<string>(input => input.Contains(MessageConstants.CurrentBalance(expectedBalance, currency.Code))), true));
         }
         
         [Fact]
@@ -112,7 +112,7 @@ namespace NxtTipbot.Tests
             await slackHandler.InstantMessageCommand("balance", slackUser, imSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.CurrentBalance(expectedBalance, asset.Name))), true));
+                It.Is<string>(input => input.Contains(MessageConstants.CurrentBalance(expectedBalance, asset.Name))), true));
         }
 
         [Theory]

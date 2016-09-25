@@ -122,13 +122,13 @@ namespace NxtTipbot
                 return;
             }
             var balance = await nxtConnector.GetBalance(account);
-            await SlackConnector.SendMessage(imSession.Id, MessageConstants.CurrentBalance(balance));
+            var message = MessageConstants.CurrentBalance(balance);
             foreach (var currency in currencies)
             {
                 var currencyBalance = await nxtConnector.GetCurrencyBalance(currency, account.NxtAccountRs);
                 if (currencyBalance > 0)
                 {
-                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.CurrentBalance(currencyBalance, currency.Code));
+                    message += "\n" + MessageConstants.CurrentBalance(currencyBalance, currency.Code);
                 }
             }
             foreach (var asset in assets)
@@ -136,9 +136,10 @@ namespace NxtTipbot
                 var assetCount = await nxtConnector.GetAssetBalance(asset.Value, account.NxtAccountRs);
                 if (assetCount > 0)
                 {
-                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.CurrentBalance(assetCount, asset.Key));
+                    message += "\n" + MessageConstants.CurrentBalance(assetCount, asset.Key);
                 }
             }
+            await SlackConnector.SendMessage(imSession.Id, message);
         }
 
         private async Task Deposit(SlackUser slackUser, SlackIMSession imSession)
