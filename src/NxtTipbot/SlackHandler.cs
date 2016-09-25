@@ -38,12 +38,22 @@ namespace NxtTipbot
 
         public void AddCurrency(Currency currency)
         {
+            CheckUnique(currency.Code);
             currencies.Add(currency);
         }
 
         public void AddAsset(Asset asset, string assetName)
         {
+            CheckUnique(assetName);
             assets.Add(assetName, asset);
+        }
+
+        private void CheckUnique(string name)
+        {
+            if (assets.ContainsKey(name) || currencies.Any(c => c.Code == name))
+            {
+                throw new ArgumentException($"{name} already exists.");
+            }
         }
 
         public async Task InstantMessageCommand(string message, SlackUser slackUser, SlackIMSession imSession)
