@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using NxtLib;
 using NxtLib.Accounts;
+using NxtLib.AssetExchange;
 using NxtLib.Local;
 using NxtLib.MonetarySystem;
 
@@ -15,17 +16,20 @@ namespace NxtTipbot
         Task<Currency> GetCurrency(ulong currencyId);
         Task<decimal> GetCurrencyBalance(Currency currency, string addressRs);
         Task<ulong> TransferCurrency(NxtAccount account, string addressRs, Currency currency, decimal amount, string message);
+        Task<Asset> GetAsset(ulong assetId);
     }
 
     public class NxtConnector : INxtConnector
     {
         private readonly IAccountService accountService;
         private readonly IMonetarySystemService monetarySystemService;
+        private readonly IAssetExchangeService assetExchangeService;
 
         public NxtConnector(IServiceFactory serviceFactory)
         {
             accountService = serviceFactory.CreateAccountService();
             monetarySystemService = serviceFactory.CreateMonetarySystemService();
+            assetExchangeService = serviceFactory.CreateAssetExchangeService();
         }
 
         public NxtAccount CreateAccount(string slackId)
@@ -75,6 +79,12 @@ namespace NxtTipbot
             var transferCurrencyReply = await monetarySystemService.TransferCurrency(addressRs, currency.CurrencyId, units, parameters);
 
             return transferCurrencyReply.TransactionId.Value;
+        }
+
+        public async Task<Asset> GetAsset(ulong assetId)
+        {
+            var asset = await assetExchangeService.GetAsset(assetId);
+            return asset;
         }
     }
 }

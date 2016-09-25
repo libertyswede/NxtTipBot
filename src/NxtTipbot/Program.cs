@@ -23,12 +23,14 @@ namespace NxtTipbot
             var walletFile = configSettings.Single(c => c.Key == "walletFile").Value;
             var nxtServerAddress = configSettings.Single(c => c.Key == "nxtServerAddress").Value;
             var currencies = configSettings.SingleOrDefault(c => c.Key == "currencies")?.GetChildren();
+            var assets = GetAssets(configSettings);
             
             var logger = SetupLogging(logLevel);
             logger.LogInformation($"logLevel: {logLevel}");
             logger.LogInformation($"nxtServerAddress: {nxtServerAddress}");
             logger.LogInformation($"walletFile: {walletFile}");
-            currencies?.ToList().ForEach(c => logger.LogInformation($"currency: {c.Value}"));
+            currencies?.ToList().ForEach(c => logger.LogInformation($"currency id: {c.Value}"));
+            assets.ToList().ForEach(a => logger.LogInformation($"asset id: {a.Id} ({a.Name})"));
 
             InitDatabase(walletFile);
             var walletRepository = new WalletRepository();
@@ -44,10 +46,28 @@ namespace NxtTipbot
                     Task.Run(async () => slackHandler.AddCurrency(await nxtConnector.GetCurrency(currencyId))).Wait();
                 }
             }
+            foreach (var asset in assets)
+            {
+                Task.Run(async () => slackHandler.AddAsset(await nxtConnector.GetAsset(asset.Id), asset.Name)).Wait();
+            }
 
             var slackTask = Task.Run(() => slackConnector.Run());
             Task.WaitAll(slackTask);
             logger.LogInformation("Exiting NxtTipbot");
+        }
+
+        private static IEnumerable<AssetConfig> GetAssets(IEnumerable<IConfigurationSection> configSettings)
+        {
+            var assetsSection = configSettings.SingleOrDefault(c => c.Key == "assets")?.GetChildren();
+            if (assetsSection != null)
+            {
+                foreach (var assetConfig in assetsSection)
+                {
+                    var id = ulong.Parse(assetConfig.GetChildren().Single(a => a.Key == "id").Value);
+                    var name = assetConfig.GetChildren().Single(a => a.Key == "name").Value;
+                    yield return new AssetConfig { Id = id, Name = name };
+                }
+            }
         }
 
         private static void InitDatabase(string walletFile)

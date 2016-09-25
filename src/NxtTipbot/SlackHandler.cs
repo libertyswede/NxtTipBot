@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NxtLib;
+using NxtLib.AssetExchange;
 using NxtLib.MonetarySystem;
 
 namespace NxtTipbot
@@ -15,6 +16,7 @@ namespace NxtTipbot
         Task InstantMessageCommand(string message, SlackUser slackUser, SlackIMSession imSession);
         Task TipBotChannelCommand(SlackMessage message, SlackUser slackUser, SlackChannelSession channelSession);
         void AddCurrency(Currency currency);
+        void AddAsset(Asset asset, string assetName);
     }
 
     public class SlackHandler : ISlackHandler
@@ -24,6 +26,7 @@ namespace NxtTipbot
         private readonly IWalletRepository walletRepository;
         private readonly ILogger logger;
         private readonly List<Currency> currencies = new List<Currency>();
+        private readonly Dictionary<string, Asset> assets = new Dictionary<string, Asset>();
         public ISlackConnector SlackConnector { get; set; }
 
         public SlackHandler(INxtConnector nxtConnector, IWalletRepository walletRepository, ILogger logger)
@@ -36,6 +39,11 @@ namespace NxtTipbot
         public void AddCurrency(Currency currency)
         {
             currencies.Add(currency);
+        }
+
+        public void AddAsset(Asset asset, string assetName)
+        {
+            assets.Add(assetName, asset);
         }
 
         public async Task InstantMessageCommand(string message, SlackUser slackUser, SlackIMSession imSession)
