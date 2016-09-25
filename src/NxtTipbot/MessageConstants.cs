@@ -37,7 +37,7 @@ namespace NxtTipbot
 
         public static string DepositAddress(string accountRs)
         {
-            return $"You may deposit Nxt or accepted currencies/assets here: {accountRs}";
+            return $"You may deposit Nxt or accepted currency/asset here: {accountRs}";
         }
 
         public static string NotEnoughFunds(decimal balance, string unit)
