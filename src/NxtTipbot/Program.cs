@@ -16,13 +16,16 @@ namespace NxtTipbot
         public static void Main(string[] args)
         {
             Console.WriteLine("Starting up NxtTipbot");
-            var logger = SetupLogging();
             var configSettings = ReadConfig();
-
+            
+            var logLevel = GetLogLevel(configSettings);
             var apiToken = configSettings.Single(c => c.Key == "apitoken").Value;
             var walletFile = configSettings.Single(c => c.Key == "walletFile").Value;
             var nxtServerAddress = configSettings.Single(c => c.Key == "nxtServerAddress").Value;
             var currencies = configSettings.SingleOrDefault(c => c.Key == "currencies")?.GetChildren();
+            
+            var logger = SetupLogging(logLevel);
+            logger.LogInformation($"logLevel: {logLevel}");
             logger.LogInformation($"nxtServerAddress: {nxtServerAddress}");
             logger.LogInformation($"walletFile: {walletFile}");
             currencies?.ToList().ForEach(c => logger.LogInformation($"currency: {c.Value}"));
@@ -69,10 +72,18 @@ namespace NxtTipbot
             return configSettings;
         }
 
-        private static ILogger SetupLogging()
+        private static LogLevel GetLogLevel(IEnumerable<IConfigurationSection> configSettings)
+        {
+            var loggingSection = configSettings.Single(c => c.Key == "logging").GetChildren();
+            var logLevelText = loggingSection.Single(c => c.Key == "logLevel").Value;
+            var logLevel = (LogLevel) Enum.Parse(typeof(LogLevel), logLevelText);
+            return logLevel;
+        }
+
+        private static ILogger SetupLogging(LogLevel logLevel)
         {
             var loggerFactory = new LoggerFactory();
-            loggerFactory.AddConsole(LogLevel.Trace);
+            loggerFactory.AddConsole(logLevel);
             return loggerFactory.CreateLogger("");
         }
     }

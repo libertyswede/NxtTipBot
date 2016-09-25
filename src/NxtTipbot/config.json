@@ -1,5 +1,8 @@
 {
     "apitoken": "xxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx",
     "walletFile": "c:\\temp\\nxttipbot\\nxtwallet.db",
-    "nxtServerAddress": "http://localhost:7876/nxt"
+    "nxtServerAddress": "http://localhost:7876/nxt",
+    "logging": {
+        "logLevel": "Information"
+    } 
 }
