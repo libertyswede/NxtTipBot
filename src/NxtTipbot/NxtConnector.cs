@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using NxtLib;
 using NxtLib.Accounts;
@@ -17,6 +18,7 @@ namespace NxtTipbot
         Task<decimal> GetCurrencyBalance(Currency currency, string addressRs);
         Task<ulong> TransferCurrency(NxtAccount account, string addressRs, Currency currency, decimal amount, string message);
         Task<Asset> GetAsset(ulong assetId);
+        Task<decimal> GetAssetBalance(Asset asset, string addressRs);
     }
 
     public class NxtConnector : INxtConnector
@@ -85,6 +87,17 @@ namespace NxtTipbot
         {
             var asset = await assetExchangeService.GetAsset(assetId);
             return asset;
+        }
+
+        public async Task<decimal> GetAssetBalance(Asset asset, string addressRs)
+        {
+            var accountAssetsReply = await assetExchangeService.GetAccountAssets(addressRs, asset.AssetId);
+            var accountAsset = accountAssetsReply.AccountAssets.ToList().SingleOrDefault();
+            if (accountAsset == null)
+            {
+                return 0M;
+            }
+            return (decimal)accountAsset.UnconfirmedQuantityQnt / Math.Max(asset.Decimals, (byte)1);
         }
     }
 }

@@ -118,7 +118,15 @@ namespace NxtTipbot
                 var currencyBalance = await nxtConnector.GetCurrencyBalance(currency, account.NxtAccountRs);
                 if (currencyBalance > 0)
                 {
-                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.CurrentCurrencyBalance(currencyBalance, currency.Code));
+                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.CurrentBalance(currencyBalance, currency.Code));
+                }
+            }
+            foreach (var asset in assets)
+            {
+                var assetCount = await nxtConnector.GetAssetBalance(asset.Value, account.NxtAccountRs);
+                if (assetCount > 0)
+                {
+                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.CurrentBalance(assetCount, asset.Key));
                 }
             }
         }

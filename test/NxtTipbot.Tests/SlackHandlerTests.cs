@@ -3,6 +3,8 @@ using Moq;
 using Microsoft.Extensions.Logging;
 using NxtLib.MonetarySystem;
 using NxtLib;
+using NxtLib.AssetExchange;
+using System;
 
 namespace NxtTipbot.Tests
 {
@@ -34,6 +36,12 @@ namespace NxtTipbot.Tests
         {
             CurrencyId = 123,
             Code = "TEST",
+            Decimals = 4
+        };
+        private readonly Asset asset = new Asset
+        {
+            AssetId = 123,
+            Name = "TEST",
             Decimals = 4
         };
 
@@ -91,7 +99,20 @@ namespace NxtTipbot.Tests
             await slackHandler.InstantMessageCommand("balance", slackUser, imSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.CurrentCurrencyBalance(expectedBalance, currency.Code))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.CurrentBalance(expectedBalance, currency.Code))), true));
+        }
+        
+        [Fact]
+        public async void BalanceShouldReturnCorrectAssetBalance()
+        {
+            const decimal expectedBalance = 42M;
+            SetupNxtAccount(senderAccount, 1);
+            SetupAsset(asset, expectedBalance, senderAccount.NxtAccountRs);
+
+            await slackHandler.InstantMessageCommand("balance", slackUser, imSession);
+
+            slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
+                It.Is<string>(input => input.Equals(MessageConstants.CurrentBalance(expectedBalance, asset.Name))), true));
         }
 
         [Theory]
@@ -373,6 +394,15 @@ namespace NxtTipbot.Tests
                 It.Is<Currency>(currency => currency == c), 
                 It.Is<string>(a => a == accountRs)))
                     .ReturnsAsync(currencyBalance);
+        }
+
+        private void SetupAsset(Asset a, decimal assetCount, string accountRs)
+        {
+            slackHandler.AddAsset(a, a.Name);
+            nxtConnectorMock.Setup(connector => connector.GetAssetBalance(
+                It.Is<Asset>(asset => asset == a),
+                It.Is<string>(rs => rs == accountRs)))
+                    .ReturnsAsync(assetCount);
         }
     }
 }

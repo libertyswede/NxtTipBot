@@ -24,9 +24,9 @@ namespace NxtTipbot
             return $"Your current balance is {balance} NXT.";
         }
 
-        public static string CurrentCurrencyBalance(decimal balance, string code)
+        public static string CurrentBalance(decimal balance, string unit)
         {
-            return $"You also have {balance} {code}.";
+            return $"You also have {balance} {unit}.";
         }
 
         public static string AccountCreated(string accountRs)
