@@ -70,7 +70,7 @@ namespace NxtTipbot
         public async Task<decimal> GetCurrencyBalance(Currency currency, string addressRs)
         {
             var accountCurrencyReply = await monetarySystemService.GetAccountCurrencies(addressRs, currency.CurrencyId);
-            return (decimal)accountCurrencyReply.UnconfirmedUnits / Math.Max(currency.Decimals, (byte)1);
+            return (decimal)accountCurrencyReply.UnconfirmedUnits / (decimal)Math.Pow(10, Math.Max(currency.Decimals, (byte)1));
         }
 
         public async Task<ulong> TransferCurrency(NxtAccount account, string addressRs, Currency currency, decimal amount, string message)
@@ -97,7 +97,7 @@ namespace NxtTipbot
             {
                 return 0M;
             }
-            return (decimal)accountAsset.UnconfirmedQuantityQnt / Math.Max(asset.Decimals, (byte)1);
+            return (decimal)accountAsset.UnconfirmedQuantityQnt / (decimal)Math.Pow(10, Math.Max(asset.Decimals, (byte)1));
         }
     }
 }
