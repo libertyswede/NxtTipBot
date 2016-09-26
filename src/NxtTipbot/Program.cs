@@ -17,20 +17,20 @@ namespace NxtTipbot
         {
             Console.WriteLine("Starting up NxtTipbot");
             var configSettings = ReadConfig();
-            
+
             var logLevel = GetLogLevel(configSettings);
             var apiToken = configSettings.Single(c => c.Key == "apitoken").Value;
             var walletFile = configSettings.Single(c => c.Key == "walletFile").Value;
             var nxtServerAddress = configSettings.Single(c => c.Key == "nxtServerAddress").Value;
-            var currencies = configSettings.SingleOrDefault(c => c.Key == "currencies")?.GetChildren();
-            var assets = GetAssets(configSettings);
-            
+            var currencyIds = GetCurrenciesConfiguration(configSettings);
+            var assetConfigs = GetAssetsConfiguration(configSettings);
+
             var logger = SetupLogging(logLevel);
             logger.LogInformation($"logLevel: {logLevel}");
             logger.LogInformation($"nxtServerAddress: {nxtServerAddress}");
             logger.LogInformation($"walletFile: {walletFile}");
-            currencies?.ToList().ForEach(c => logger.LogInformation($"currency id: {c.Value}"));
-            assets.ToList().ForEach(a => logger.LogInformation($"asset id: {a.Id} ({a.Name})"));
+            currencyIds.ToList().ForEach(c => logger.LogInformation($"currency id: {c}"));
+            assetConfigs.ToList().ForEach(a => logger.LogInformation($"asset id: {a.Id} ({a.Name})"));
 
             InitDatabase(walletFile);
             var walletRepository = new WalletRepository();
@@ -39,24 +39,32 @@ namespace NxtTipbot
             var slackConnector = new SlackConnector(apiToken, logger, slackHandler);
             slackHandler.SlackConnector = slackConnector;
 
-            if (currencies != null)
-            {
-                foreach (var currencyId in currencies?.Select(c => ulong.Parse(c.Value)))
-                {
-                    Task.Run(async () => slackHandler.AddCurrency(await nxtConnector.GetCurrency(currencyId))).Wait();
-                }
-            }
-            foreach (var asset in assets)
-            {
-                Task.Run(async () => slackHandler.AddAsset(await nxtConnector.GetAsset(asset.Id), asset.Name)).Wait();
-            }
+            var transferables = GetTransferables(currencyIds, assetConfigs, nxtConnector);
+            transferables.ForEach(t => slackHandler.AddTransferable(t));
 
             var slackTask = Task.Run(() => slackConnector.Run());
             Task.WaitAll(slackTask);
             logger.LogInformation("Exiting NxtTipbot");
         }
 
-        private static IEnumerable<AssetConfig> GetAssets(IEnumerable<IConfigurationSection> configSettings)
+        private static List<NxtTransferable> GetTransferables(IEnumerable<ulong> currencyIds, IEnumerable<AssetConfig> assetConfigs, NxtConnector nxtConnector)
+        {
+            List<NxtTransferable> transferables = new List<NxtTransferable>();
+            Task.Run(async () =>
+            {
+                foreach (var currencyId in currencyIds)
+                {
+                    transferables.Add(await nxtConnector.GetCurrency(currencyId));
+                }
+                foreach (var assetConfig in assetConfigs)
+                {
+                    transferables.Add(await nxtConnector.GetAsset(assetConfig.Id, assetConfig.Name));
+                }
+            }).Wait();
+            return transferables;
+        }
+
+        private static IEnumerable<AssetConfig> GetAssetsConfiguration(IEnumerable<IConfigurationSection> configSettings)
         {
             var assetsSection = configSettings.SingleOrDefault(c => c.Key == "assets")?.GetChildren();
             if (assetsSection != null)
@@ -70,6 +78,14 @@ namespace NxtTipbot
             }
         }
 
+        private static IEnumerable<ulong> GetCurrenciesConfiguration(IEnumerable<IConfigurationSection> configSettings)
+        {
+            var currencyConfigs = configSettings.SingleOrDefault(c => c.Key == "currencies")?.GetChildren() 
+                ?? new List<IConfigurationSection>().AsEnumerable();
+            var currencyIds = currencyConfigs.Select(c => ulong.Parse(c.Value));
+            return currencyIds;
+        }
+
         private static void InitDatabase(string walletFile)
         {
             var folder = Path.GetDirectoryName(walletFile);
@@ -77,7 +93,7 @@ namespace NxtTipbot
             {
                 Directory.CreateDirectory(folder);
             }
-            WalletContext.WalletFile = walletFile; // this ain't pretty, fix when IoC is added
+            WalletContext.WalletFile = walletFile;
             new WalletContext().Database.Migrate();
         }
 

@@ -12,13 +12,12 @@ namespace NxtTipbot
     public interface INxtConnector
     {
         NxtAccount CreateAccount(string slackId);
-        Task<decimal> GetBalance(NxtAccount account);
+        Task<decimal> GetNxtBalance(NxtAccount account);
         Task<ulong> SendMoney(NxtAccount account, string addressRs, Amount amount, string message);
-        Task<Currency> GetCurrency(ulong currencyId);
-        Task<decimal> GetCurrencyBalance(Currency currency, string addressRs);
-        Task<ulong> TransferCurrency(NxtAccount account, string addressRs, Currency currency, decimal amount, string message);
-        Task<Asset> GetAsset(ulong assetId);
-        Task<decimal> GetAssetBalance(Asset asset, string addressRs);
+        Task<NxtCurrency> GetCurrency(ulong currencyId);
+        Task<decimal> GetBalance(NxtTransferable transferable, string addressRs);
+        Task<ulong> Transfer(NxtAccount account, string addressRs, NxtTransferable transferable, decimal amount, string message);
+        Task<NxtAsset> GetAsset(ulong assetId, string name);
     }
 
     public class NxtConnector : INxtConnector
@@ -46,7 +45,7 @@ namespace NxtTipbot
             return account;
         }
 
-        public async Task<decimal> GetBalance(NxtAccount account)
+        public async Task<decimal> GetNxtBalance(NxtAccount account)
         {
             var balanceReply = await accountService.GetBalance(account.NxtAccountRs);
             return balanceReply.UnconfirmedBalance.Nxt;
@@ -61,43 +60,56 @@ namespace NxtTipbot
             return sendMoneyReply.TransactionId.Value;
         }
 
-        public async Task<Currency> GetCurrency(ulong currencyId)
+        public async Task<NxtCurrency> GetCurrency(ulong currencyId)
         {
             var currencyReply = await monetarySystemService.GetCurrency(CurrencyLocator.ByCurrencyId(currencyId));
-            return currencyReply;
+            return new NxtCurrency(currencyReply);
         }
-
-        public async Task<decimal> GetCurrencyBalance(Currency currency, string addressRs)
+        
+        public async Task<decimal> GetBalance(NxtTransferable transferable, string addressRs)
         {
-            var accountCurrencyReply = await monetarySystemService.GetAccountCurrencies(addressRs, currency.CurrencyId);
-            return (decimal)accountCurrencyReply.UnconfirmedUnits / (decimal)Math.Pow(10, Math.Max(currency.Decimals, (byte)1));
+            var unformattedBalance = (transferable.Type == NxtTransferableType.Currency) ? 
+                await GetCurrencyBalance(transferable.Id, addressRs) : 
+                await GetAssetBalance(transferable.Id, addressRs);
+            
+            return (decimal)unformattedBalance / (decimal)Math.Pow(10, Math.Max(transferable.Decimals, (byte)1));
         }
 
-        public async Task<ulong> TransferCurrency(NxtAccount account, string addressRs, Currency currency, decimal amount, string message)
+        private async Task<long> GetCurrencyBalance(ulong currencyId, string addressRs)
+        {
+            var accountCurrencyReply = await monetarySystemService.GetAccountCurrencies(addressRs, currencyId);
+            return accountCurrencyReply.UnconfirmedUnits;
+        }
+
+        private async Task<long> GetAssetBalance(ulong assetId, string addressRs)
+        {
+            var accountAssetsReply = await assetExchangeService.GetAccountAssets(addressRs, assetId);
+            return accountAssetsReply.AccountAssets.SingleOrDefault()?.UnconfirmedQuantityQnt ?? 0;
+        }
+
+        public async Task<ulong> Transfer(NxtAccount account, string addressRs, NxtTransferable transferable, decimal amount, string message)
         {
             var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, account.SecretPhrase);
             parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true);
-            var units = (long)(amount * (long)Math.Pow(Math.Max(currency.Decimals, (byte)1), 10));
-            var transferCurrencyReply = await monetarySystemService.TransferCurrency(addressRs, currency.CurrencyId, units, parameters);
+            var units = (long)(amount * (long)Math.Pow(Math.Max(transferable.Decimals, (byte)1), 10));
 
+            if (transferable.Type == NxtTransferableType.Currency)
+            {
+                return await TransferCurrency(addressRs, transferable.Id, units, parameters);
+            }
+            throw new NotImplementedException();
+        }
+
+        private async Task<ulong> TransferCurrency(string addressRs, ulong currencyId, long units, CreateTransactionParameters parameters)
+        {
+            var transferCurrencyReply = await monetarySystemService.TransferCurrency(addressRs, currencyId, units, parameters);
             return transferCurrencyReply.TransactionId.Value;
         }
 
-        public async Task<Asset> GetAsset(ulong assetId)
+        public async Task<NxtAsset> GetAsset(ulong assetId, string name)
         {
             var asset = await assetExchangeService.GetAsset(assetId);
-            return asset;
-        }
-
-        public async Task<decimal> GetAssetBalance(Asset asset, string addressRs)
-        {
-            var accountAssetsReply = await assetExchangeService.GetAccountAssets(addressRs, asset.AssetId);
-            var accountAsset = accountAssetsReply.AccountAssets.ToList().SingleOrDefault();
-            if (accountAsset == null)
-            {
-                return 0M;
-            }
-            return (decimal)accountAsset.UnconfirmedQuantityQnt / (decimal)Math.Pow(10, Math.Max(asset.Decimals, (byte)1));
+            return new NxtAsset(asset, name);
         }
     }
 }
