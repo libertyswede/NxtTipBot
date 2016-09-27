@@ -91,7 +91,7 @@ namespace NxtTipbot
         {
             var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, account.SecretPhrase);
             parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true);
-            var units = (long)(amount * (long)Math.Pow(Math.Max(transferable.Decimals, (byte)1), 10));
+            var units = (long)(amount * (long)Math.Pow(10, Math.Max(transferable.Decimals, (byte)1)));
 
             if (transferable.Type == NxtTransferableType.Currency)
             {
