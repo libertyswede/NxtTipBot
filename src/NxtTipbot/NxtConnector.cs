@@ -97,7 +97,17 @@ namespace NxtTipbot
             {
                 return await TransferCurrency(addressRs, transferable.Id, units, parameters);
             }
-            throw new NotImplementedException();
+            else if (transferable.Type == NxtTransferableType.Asset)
+            {
+                return await TransferAsset(addressRs, transferable.Id, units, parameters);
+            }
+            throw new ArgumentException($"Unsupported NxtTransferableType: {transferable.Type}", nameof(transferable));
+        }
+
+        private async Task<ulong> TransferAsset(string addressRs, ulong assetId, long quantityQnt, CreateTransactionParameters parameters)
+        {
+            var transferAssetReply = await assetExchangeService.TransferAsset(addressRs, assetId, quantityQnt, parameters);
+            return transferAssetReply.TransactionId.Value;
         }
 
         private async Task<ulong> TransferCurrency(string addressRs, ulong currencyId, long units, CreateTransactionParameters parameters)

@@ -306,10 +306,10 @@ namespace NxtTipbot
                 return;
             }
 
-            var currencyBalance = await nxtConnector.GetBalance(transferable, account.NxtAccountRs);
-            if (currencyBalance < amountToTip)
+            var balance = await nxtConnector.GetBalance(transferable, account.NxtAccountRs);
+            if (balance < amountToTip)
             {
-                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NotEnoughFunds(currencyBalance, transferable.Name));
+                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NotEnoughFunds(balance, transferable.Name));
                 return;
             }
             var recipientAccount = await walletRepository.GetAccount(recipientUserId);
