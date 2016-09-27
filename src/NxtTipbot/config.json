@@ -4,5 +4,17 @@
     "nxtServerAddress": "http://localhost:7876/nxt",
     "logging": {
         "logLevel": "Information"
-    } 
+    }
+
+    // Samples of how to add an MS Currency or Asset to the tip bot
+
+    // ,"currencies": [
+    //     "18154834130337484019" // NAUT MS currency
+    // ]
+    // ,"assets": [
+    //     {
+    //         "id": "12659653638116877017",
+    //         "name": "superBTC"
+    //     }
+    // ]
 }
