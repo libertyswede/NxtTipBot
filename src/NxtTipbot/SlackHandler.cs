@@ -6,8 +6,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NxtLib;
-using NxtLib.AssetExchange;
-using NxtLib.MonetarySystem;
 
 namespace NxtTipbot
 {
