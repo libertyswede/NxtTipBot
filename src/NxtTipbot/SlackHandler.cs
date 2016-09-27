@@ -24,7 +24,7 @@ namespace NxtTipbot
         private readonly INxtConnector nxtConnector;
         private readonly IWalletRepository walletRepository;
         private readonly ILogger logger;
-        private readonly Dictionary<string, NxtTransferable> transferables = new Dictionary<string, NxtTransferable>();
+        private readonly List<NxtTransferable> transferables = new List<NxtTransferable>();
         public ISlackConnector SlackConnector { get; set; }
 
         public SlackHandler(INxtConnector nxtConnector, IWalletRepository walletRepository, ILogger logger)
@@ -36,7 +36,11 @@ namespace NxtTipbot
 
         public void AddTransferable(NxtTransferable transferable)
         {
-            transferables.Add(transferable.Name, transferable);
+            if (transferables.Any(t => t.Name.Equals(transferable.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new ArgumentException(nameof(transferable), $"Name of transferable must be unique, {transferable.Name} was already added.");
+            }
+            transferables.Add(transferable);
         }
 
         public async Task InstantMessageCommand(string message, SlackUser slackUser, SlackIMSession imSession)
@@ -106,7 +110,7 @@ namespace NxtTipbot
             }
             var balance = await nxtConnector.GetNxtBalance(account);
             var message = MessageConstants.CurrentBalance(balance);
-            foreach (var transferable in transferables.Values)
+            foreach (var transferable in transferables)
             {
                 balance = await nxtConnector.GetBalance(transferable, account.NxtAccountRs);
                 if (balance > 0)
@@ -147,7 +151,7 @@ namespace NxtTipbot
 
             if (!string.Equals(unit, "NXT", StringComparison.OrdinalIgnoreCase))
             {
-                var transferable = transferables.Values.SingleOrDefault(t => t.Name == unit);
+                var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
                 if (transferable != null)
                 {
                     await Withdraw(imSession, transferable, account, address, amountToWithdraw);
@@ -258,7 +262,7 @@ namespace NxtTipbot
 
             if (!string.Equals(unit, "NXT", StringComparison.OrdinalIgnoreCase))
             {
-                var transferable = transferables.Values.SingleOrDefault(t => t.Name == unit);
+                var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
                 if (transferable != null)
                 {
                     await Tip(channelSession, slackUser, transferable, account, recipientUserId, amountToWithdraw);
