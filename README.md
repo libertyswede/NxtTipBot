@@ -4,7 +4,7 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 [.NET Core](https://www.microsoft.com/net/core/platform) is an open source development platform from Microsoft.
 
 # Features
-* Make public tips in slack channels with NXT or MS Currencies
+* Make public tips in slack channels with NXT, MS Currencies or Assets
 * See your own balance/deposit/withdraw in direct messages with the bot
 * Help command
 
@@ -23,7 +23,6 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 2. In the test/NxtTipbot.Tests directory, type 'dotnet restore' and the 'dotnet test'
 
 # Todo
-* Support sending Assets.
 * Add support for more units (USD, EUR, beer, etc.).
 * Add file logging (NLog).
 * Use AES 256 encryption for secret phrases.  
