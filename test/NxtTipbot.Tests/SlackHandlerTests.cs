@@ -1,9 +1,7 @@
 ﻿using Xunit;
 using Moq;
 using Microsoft.Extensions.Logging;
-using NxtLib.MonetarySystem;
 using NxtLib;
-using NxtLib.AssetExchange;
 using System.Threading.Tasks;
 
 namespace NxtTipbot.Tests
