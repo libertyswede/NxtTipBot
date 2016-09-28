@@ -78,7 +78,7 @@ namespace NxtTipbot
         private async Task<long> GetCurrencyBalance(ulong currencyId, string addressRs)
         {
             var accountCurrencyReply = await monetarySystemService.GetAccountCurrencies(addressRs, currencyId);
-            return accountCurrencyReply.UnconfirmedUnits;
+            return accountCurrencyReply.AccountCurrencies.SingleOrDefault()?.UnconfirmedUnits ?? 0;
         }
 
         private async Task<long> GetAssetBalance(ulong assetId, string addressRs)
