@@ -3,6 +3,7 @@ using Moq;
 using Microsoft.Extensions.Logging;
 using NxtLib;
 using System.Threading.Tasks;
+using NxtTipbot.Model;
 
 namespace NxtTipbot.Tests
 {

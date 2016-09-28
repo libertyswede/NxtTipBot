@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using NxtTipbot.Model;
 
 namespace NxtTipbot
 {

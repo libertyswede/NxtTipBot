@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NxtTipbot.Model;
 
 namespace NxtTipbot
 {

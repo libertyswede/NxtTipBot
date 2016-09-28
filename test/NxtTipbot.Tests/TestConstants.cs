@@ -1,5 +1,6 @@
 using NxtLib.AssetExchange;
 using NxtLib.MonetarySystem;
+using NxtTipbot.Model;
 
 namespace NxtTipbot.Tests
 {

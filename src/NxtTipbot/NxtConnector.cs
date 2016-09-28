@@ -6,6 +6,7 @@ using NxtLib.Accounts;
 using NxtLib.AssetExchange;
 using NxtLib.Local;
 using NxtLib.MonetarySystem;
+using NxtTipbot.Model;
 
 namespace NxtTipbot
 {
