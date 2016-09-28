@@ -2,5 +2,6 @@ project.lock.json
 config-Development.json
 sample.json
 .vscode/
+.vs/
 bin/
 obj/
