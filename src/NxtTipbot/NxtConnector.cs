@@ -12,13 +12,15 @@ namespace NxtTipbot
 {
     public interface INxtConnector
     {
-        NxtAccount CreateAccount(string slackId);
+        string MasterKey { set; }
         Task<decimal> GetNxtBalance(NxtAccount account);
         Task<ulong> SendMoney(NxtAccount account, string addressRs, Amount amount, string message);
         Task<NxtCurrency> GetCurrency(ulong currencyId);
         Task<decimal> GetBalance(NxtTransferable transferable, string addressRs);
         Task<ulong> Transfer(NxtAccount account, string addressRs, NxtTransferable transferable, decimal amount, string message);
         Task<NxtAsset> GetAsset(ulong assetId, string name);
+        string GenerateMasterKey();
+        void SetSecretPhrase(NxtAccount account);
     }
 
     public class NxtConnector : INxtConnector
@@ -27,6 +29,8 @@ namespace NxtTipbot
         private readonly IMonetarySystemService monetarySystemService;
         private readonly IAssetExchangeService assetExchangeService;
 
+        public string MasterKey { private get; set; }
+
         public NxtConnector(IServiceFactory serviceFactory)
         {
             accountService = serviceFactory.CreateAccountService();
@@ -34,16 +38,22 @@ namespace NxtTipbot
             assetExchangeService = serviceFactory.CreateAssetExchangeService();
         }
 
-        public NxtAccount CreateAccount(string slackId)
+        public string GenerateMasterKey()
+        {
+            var localPasswordGenerator = new LocalPasswordGenerator();
+            return localPasswordGenerator.GeneratePassword(256);
+        }
+
+        public void SetSecretPhrase(NxtAccount account)
         {
             var localPasswordGenerator = new LocalPasswordGenerator();
             var localAccountService = new LocalAccountService();
 
-            var secretPhrase = localPasswordGenerator.GeneratePassword();
+            var secretPhrase = localPasswordGenerator.GenerateDetermenisticPassword(MasterKey, account.Id, 256);
             var accountWithPublicKey = localAccountService.GetAccount(AccountIdLocator.BySecretPhrase(secretPhrase));
 
-            var account = new NxtAccount { SlackId = slackId, SecretPhrase = secretPhrase, NxtAccountRs = accountWithPublicKey.AccountRs };
-            return account;
+            account.SecretPhrase = secretPhrase;
+            account.NxtAccountRs = accountWithPublicKey.AccountRs;
         }
 
         public async Task<decimal> GetNxtBalance(NxtAccount account)

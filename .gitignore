@@ -5,3 +5,4 @@ sample.json
 .vs/
 bin/
 obj/
+TestResults/

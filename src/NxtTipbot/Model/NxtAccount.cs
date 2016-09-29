@@ -6,8 +6,9 @@ namespace NxtTipbot.Model
     [Table("account")]
     public class NxtAccount
     {
+        [Column("id")]
         [Key]
-        public long Id { get; set; }
+        public int Id { get; set; }
         
         [Column("slack_id")]
         [Required]

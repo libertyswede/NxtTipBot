@@ -37,8 +37,13 @@ namespace NxtTipbot
             var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress));
             var slackHandler = new SlackHandler(nxtConnector, walletRepository, logger);
             var slackConnector = new SlackConnector(apiToken, logger, slackHandler);
-            slackHandler.SlackConnector = slackConnector;
 
+            Task.Run(async () =>
+            {
+                await walletRepository.Init(nxtConnector.GenerateMasterKey);
+                nxtConnector.MasterKey = await walletRepository.GetMasterKey();
+            }).Wait();
+            slackHandler.SlackConnector = slackConnector;
             var transferables = GetTransferables(currencyIds, assetConfigs, nxtConnector);
             transferables.ForEach(t => slackHandler.AddTransferable(t));
 

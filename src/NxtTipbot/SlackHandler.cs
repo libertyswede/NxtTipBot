@@ -125,14 +125,22 @@ namespace NxtTipbot
             var account = await walletRepository.GetAccount(slackUser.Id);
             if (account == null)
             {
-                account = nxtConnector.CreateAccount(slackUser.Id);
-                await walletRepository.AddAccount(account);
+                account = await CreateNxtAccount(slackUser.Id);
                 await SlackConnector.SendMessage(imSession.Id, MessageConstants.AccountCreated(account.NxtAccountRs));
             }
             else
             {
                 await SlackConnector.SendMessage(imSession.Id, MessageConstants.DepositAddress(account.NxtAccountRs));
             }
+        }
+
+        private async Task<NxtAccount> CreateNxtAccount(string slackUserId)
+        {
+            NxtAccount account = new NxtAccount { NxtAccountRs = "", SecretPhrase = "", SlackId = slackUserId };
+            await walletRepository.AddAccount(account);
+            nxtConnector.SetSecretPhrase(account);
+            await walletRepository.UpdateAccount(account);
+            return account;
         }
 
         private async Task Withdraw(SlackUser slackUser, SlackIMSession imSession, Match match)
@@ -347,8 +355,7 @@ namespace NxtTipbot
 
         private async Task<NxtAccount> SendTipRecievedInstantMessage(SlackUser slackUser, string recipientUserId)
         {
-            var recipientAccount = nxtConnector.CreateAccount(recipientUserId);
-            await walletRepository.AddAccount(recipientAccount);
+            var recipientAccount = await CreateNxtAccount(recipientUserId);
             var imId = await SlackConnector.GetInstantMessageId(recipientUserId);
             await SlackConnector.SendMessage(imId, MessageConstants.TipRecieved(slackUser.Id));
             return recipientAccount;

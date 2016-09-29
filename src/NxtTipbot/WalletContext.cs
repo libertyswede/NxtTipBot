@@ -8,6 +8,7 @@ namespace NxtTipbot
         internal static string WalletFile { get; set; }
 
         public DbSet<NxtAccount> NxtAccounts { get; set; }
+        public DbSet<Setting> Settings { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

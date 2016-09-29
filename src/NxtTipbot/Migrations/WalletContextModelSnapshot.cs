@@ -15,10 +15,11 @@ namespace NxtTipbot.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "1.0.0-rtm-21431");
 
-            modelBuilder.Entity("NxtTipbot.NxtAccount", b =>
+            modelBuilder.Entity("NxtTipbot.Model.NxtAccount", b =>
                 {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd();
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("id");
 
                     b.Property<string>("NxtAccountRs")
                         .IsRequired()
@@ -35,6 +36,25 @@ namespace NxtTipbot.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("account");
+                });
+
+            modelBuilder.Entity("NxtTipbot.Model.Setting", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("id");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnName("key");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnName("value");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("setting");
                 });
         }
     }

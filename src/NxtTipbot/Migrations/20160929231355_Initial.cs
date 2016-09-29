@@ -12,7 +12,7 @@ namespace NxtTipbot.Migrations
                 name: "account",
                 columns: table => new
                 {
-                    Id = table.Column<long>(nullable: false)
+                    id = table.Column<int>(nullable: false)
                         .Annotation("Autoincrement", true),
                     nxt_address = table.Column<string>(nullable: false),
                     secret_phrase = table.Column<string>(nullable: false),
@@ -20,7 +20,21 @@ namespace NxtTipbot.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_account", x => x.Id);
+                    table.PrimaryKey("PK_account", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "setting",
+                columns: table => new
+                {
+                    id = table.Column<long>(nullable: false)
+                        .Annotation("Autoincrement", true),
+                    key = table.Column<string>(nullable: false),
+                    value = table.Column<string>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_setting", x => x.id);
                 });
         }
 
@@ -28,6 +42,9 @@ namespace NxtTipbot.Migrations
         {
             migrationBuilder.DropTable(
                 name: "account");
+
+            migrationBuilder.DropTable(
+                name: "setting");
         }
     }
 }
