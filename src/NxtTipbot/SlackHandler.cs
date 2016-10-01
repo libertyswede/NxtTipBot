@@ -136,9 +136,9 @@ namespace NxtTipbot
 
         private async Task<NxtAccount> CreateNxtAccount(string slackUserId)
         {
-            NxtAccount account = new NxtAccount { NxtAccountRs = "", SecretPhrase = "", SlackId = slackUserId };
+            NxtAccount account = new NxtAccount { SlackId = slackUserId };
             await walletRepository.AddAccount(account);
-            nxtConnector.SetSecretPhrase(account);
+            nxtConnector.SetNxtProperties(account);
             await walletRepository.UpdateAccount(account);
             return account;
         }

@@ -14,9 +14,8 @@ namespace NxtTipbot.Migrations
                 {
                     id = table.Column<int>(nullable: false)
                         .Annotation("Autoincrement", true),
-                    nxt_address = table.Column<string>(nullable: false),
-                    secret_phrase = table.Column<string>(nullable: false),
-                    slack_id = table.Column<string>(nullable: false)
+                    nxt_address = table.Column<string>(nullable: true),
+                    slack_id = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {

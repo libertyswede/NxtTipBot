@@ -93,7 +93,7 @@ namespace NxtTipbot.Tests
         public async void DepositShouldCreateAccount(string command)
         {
             walletRepositoryMock.Setup(r => r.GetAccount(It.IsAny<string>())).ReturnsAsync(null);
-            nxtConnectorMock.Setup(c => c.SetSecretPhrase(It.IsAny<NxtAccount>()))
+            nxtConnectorMock.Setup(c => c.SetNxtProperties(It.IsAny<NxtAccount>()))
                 .Callback((NxtAccount account) => account.NxtAccountRs = TestConstants.SenderAccount.NxtAccountRs);
 
             await slackHandler.InstantMessageCommand(command, slackUser, imSession);

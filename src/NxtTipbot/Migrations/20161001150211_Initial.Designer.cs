@@ -8,7 +8,7 @@ using NxtTipbot;
 namespace NxtTipbot.Migrations
 {
     [DbContext(typeof(WalletContext))]
-    [Migration("20160929231355_Initial")]
+    [Migration("20161001150211_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,15 +23,9 @@ namespace NxtTipbot.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("NxtAccountRs")
-                        .IsRequired()
                         .HasColumnName("nxt_address");
 
-                    b.Property<string>("SecretPhrase")
-                        .IsRequired()
-                        .HasColumnName("secret_phrase");
-
                     b.Property<string>("SlackId")
-                        .IsRequired()
                         .HasColumnName("slack_id");
 
                     b.HasKey("Id");

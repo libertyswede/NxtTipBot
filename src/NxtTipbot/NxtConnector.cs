@@ -20,7 +20,7 @@ namespace NxtTipbot
         Task<ulong> Transfer(NxtAccount account, string addressRs, NxtTransferable transferable, decimal amount, string message);
         Task<NxtAsset> GetAsset(ulong assetId, string name);
         string GenerateMasterKey();
-        void SetSecretPhrase(NxtAccount account);
+        void SetNxtProperties(NxtAccount account);
     }
 
     public class NxtConnector : INxtConnector
@@ -44,15 +44,30 @@ namespace NxtTipbot
             return localPasswordGenerator.GeneratePassword(256);
         }
 
-        public void SetSecretPhrase(NxtAccount account)
+        public void SetNxtProperties(NxtAccount account)
+        {
+            if (string.IsNullOrEmpty(account.SecretPhrase))
+            {
+                SetSecretPhrase(account);
+                SetAccountRs(account);
+            }
+            else if (string.IsNullOrEmpty(account.NxtAccountRs))
+            {
+                SetAccountRs(account);
+            }
+        }
+
+        private void SetSecretPhrase(NxtAccount account)
         {
             var localPasswordGenerator = new LocalPasswordGenerator();
-            var localAccountService = new LocalAccountService();
-
             var secretPhrase = localPasswordGenerator.GenerateDetermenisticPassword(MasterKey, account.Id, 256);
-            var accountWithPublicKey = localAccountService.GetAccount(AccountIdLocator.BySecretPhrase(secretPhrase));
-
             account.SecretPhrase = secretPhrase;
+        }
+
+        private void SetAccountRs(NxtAccount account)
+        {
+            var localAccountService = new LocalAccountService();
+            var accountWithPublicKey = localAccountService.GetAccount(AccountIdLocator.BySecretPhrase(account.SecretPhrase));
             account.NxtAccountRs = accountWithPublicKey.AccountRs;
         }
 
@@ -64,6 +79,7 @@ namespace NxtTipbot
 
         public async Task<ulong> SendMoney(NxtAccount account, string addressRs, Amount amount, string message)
         {
+            SetNxtProperties(account);
             var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, account.SecretPhrase);
             parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true); 
             var sendMoneyReply = await accountService.SendMoney(parameters, addressRs, amount);
@@ -83,7 +99,7 @@ namespace NxtTipbot
                 await GetCurrencyBalance(transferable.Id, addressRs) : 
                 await GetAssetBalance(transferable.Id, addressRs);
             
-            return (decimal)unformattedBalance / (decimal)Math.Pow(10, Math.Max(transferable.Decimals, (byte)1));
+            return unformattedBalance / (decimal)Math.Pow(10, Math.Max(transferable.Decimals, 1));
         }
 
         private async Task<long> GetCurrencyBalance(ulong currencyId, string addressRs)
@@ -100,6 +116,7 @@ namespace NxtTipbot
 
         public async Task<ulong> Transfer(NxtAccount account, string addressRs, NxtTransferable transferable, decimal amount, string message)
         {
+            SetNxtProperties(account);
             var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, account.SecretPhrase);
             parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true);
             var units = (long)(amount * (long)Math.Pow(10, Math.Max(transferable.Decimals, (byte)1)));

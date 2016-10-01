@@ -22,15 +22,9 @@ namespace NxtTipbot.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("NxtAccountRs")
-                        .IsRequired()
                         .HasColumnName("nxt_address");
 
-                    b.Property<string>("SecretPhrase")
-                        .IsRequired()
-                        .HasColumnName("secret_phrase");
-
                     b.Property<string>("SlackId")
-                        .IsRequired()
                         .HasColumnName("slack_id");
 
                     b.HasKey("Id");
