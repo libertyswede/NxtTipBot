@@ -16,7 +16,9 @@ namespace NxtTipbot.Model
         [Column("nxt_address")]
         public string NxtAccountRs { get; set; }
 
-        [Column("secret_phrase")]
+        [NotMapped]
+        public string NxtPublicKey { get; set; }
+
         [NotMapped]
         public string SecretPhrase { get; set; }
     }

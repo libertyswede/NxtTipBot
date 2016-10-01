@@ -290,14 +290,16 @@ namespace NxtTipbot
                 return;
             }
             var recipientAccount = await walletRepository.GetAccount(recipientUserId);
+            var recipientPublicKey = "";
             if (recipientAccount == null)
             {
                 recipientAccount = await SendTipRecievedInstantMessage(slackUser, recipientUserId);
+                recipientPublicKey = recipientAccount.NxtPublicKey;
             }
 
             try
             {
-                var txId = await nxtConnector.SendMoney(account, recipientAccount.NxtAccountRs, amount, "slackbot tip");
+                var txId = await nxtConnector.SendMoney(account, recipientAccount.NxtAccountRs, amount, "slackbot tip", recipientPublicKey);
                 var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amount.Nxt, unit, txId);
                 await SlackConnector.SendMessage(channelSession.Id, reply, false);
             }
@@ -324,13 +326,15 @@ namespace NxtTipbot
                 return;
             }
             var recipientAccount = await walletRepository.GetAccount(recipientUserId);
+            var recipientPublicKey = "";
             if (recipientAccount == null)
             {
                 recipientAccount = await SendTipRecievedInstantMessage(slackUser, recipientUserId);
+                recipientPublicKey = recipientAccount.NxtPublicKey;
             }
             try
             {
-                var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToTip, "slackbot tip");
+                var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToTip, "slackbot tip", recipientPublicKey);
                 var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToTip, transferable.Name, txId);
                 await SlackConnector.SendMessage(channelSession.Id, reply, false);
             }
