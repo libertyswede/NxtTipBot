@@ -119,15 +119,15 @@ namespace NxtTipbot
             SetNxtProperties(account);
             var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, account.SecretPhrase);
             parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true);
-            var units = (long)(amount * (long)Math.Pow(10, Math.Max(transferable.Decimals, 1)));
+            var quantity = (long)(amount * (long)Math.Pow(10, Math.Max(transferable.Decimals, 1)));
 
             if (transferable.Type == NxtTransferableType.Currency)
             {
-                return await TransferCurrency(addressRs, transferable.Id, units, parameters);
+                return await TransferCurrency(addressRs, transferable.Id, quantity, parameters);
             }
             else if (transferable.Type == NxtTransferableType.Asset)
             {
-                return await TransferAsset(addressRs, transferable.Id, units, parameters);
+                return await TransferAsset(addressRs, transferable.Id, quantity, parameters);
             }
             throw new ArgumentException($"Unsupported NxtTransferableType: {transferable.Type}", nameof(transferable));
         }
