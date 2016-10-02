@@ -234,7 +234,7 @@ namespace NxtTipbot
         {
             var recipientUserId = match.Groups[1].Value;
             var amountToWithdraw = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-            var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? "NXT" : match.Groups[3].Value;
+            var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? Nxt.Singleton.Name : match.Groups[3].Value;
             var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
             var account = await walletRepository.GetAccount(slackUser.Id);
 
