@@ -142,55 +142,62 @@ namespace NxtTipbot
             return account;
         }
 
-        private async Task Withdraw(SlackUser slackUser, SlackIMSession imSession, Match match)
+        private async Task<bool> VerifyParameters(NxtTransferable transferable, string unit, NxtAccount account, string slackSessionId, decimal amount)
         {
-            var account = await walletRepository.GetAccount(slackUser.Id);
-            if (account == null)
-            {
-                await SlackConnector.SendMessage(imSession.Id, MessageConstants.NoAccount);
-                return;
-            }
-
-            var address = match.Groups[1].Value;
-            var amountToWithdraw = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-            var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? Nxt.Singleton.Name : match.Groups[3].Value;
-            var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
-
             if (transferable == null)
             {
-                await SlackConnector.SendMessage(imSession.Id, MessageConstants.UnknownUnit(unit));
-                return;
+                await SlackConnector.SendMessage(slackSessionId, MessageConstants.UnknownUnit(unit));
+                return false;
             }
 
             var nxtBalance = await nxtConnector.GetBalance(Nxt.Singleton, account.NxtAccountRs);
             if (transferable == Nxt.Singleton)
             {
-                if (amountToWithdraw > nxtBalance + 1)
+                if (amount > nxtBalance + 1)
                 {
-                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.NotEnoughFunds(nxtBalance, transferable.Name));
-                    return;
+                    await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFunds(nxtBalance, transferable.Name));
+                    return false;
                 }
             }
             else
             {
                 if (nxtBalance < 1)
                 {
-                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.NotEnoughFunds(nxtBalance, Nxt.Singleton.Name));
-                    return;
+                    await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFunds(nxtBalance, Nxt.Singleton.Name));
+                    return false;
                 }
 
                 var balance = await nxtConnector.GetBalance(transferable, account.NxtAccountRs);
-                if (balance < amountToWithdraw)
+                if (balance < amount)
                 {
-                    await SlackConnector.SendMessage(imSession.Id, MessageConstants.NotEnoughFunds(balance, transferable.Name));
-                    return;
+                    await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFunds(balance, transferable.Name));
+                    return false;
                 }
             }
+            return true;
+        }
 
+        private async Task Withdraw(SlackUser slackUser, SlackIMSession imSession, Match match)
+        {
+            var address = match.Groups[1].Value;
+            var amountToWithdraw = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+            var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? Nxt.Singleton.Name : match.Groups[3].Value;
+            var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
+            var account = await walletRepository.GetAccount(slackUser.Id);
+
+            if (account == null)
+            {
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.NoAccount);
+                return;
+            }
+            if (!(await VerifyParameters(transferable, unit, account, imSession.Id, amountToWithdraw)))
+            {
+                return;
+            }
             try
             {
                 var txId = await nxtConnector.Transfer(account, address, transferable, amountToWithdraw, "withdraw from slack tipbot");
-                await SlackConnector.SendMessage(imSession.Id, MessageConstants.Withdraw(amountToWithdraw, unit, txId), false);
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.Withdraw(amountToWithdraw, transferable.Name, txId), false);
             }
             catch (ArgumentException e)
             {
@@ -225,47 +232,20 @@ namespace NxtTipbot
 
         private async Task Tip(SlackUser slackUser, Match match, SlackChannelSession channelSession)
         {
+            var recipientUserId = match.Groups[1].Value;
+            var amountToWithdraw = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+            var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? "NXT" : match.Groups[3].Value;
+            var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
             var account = await walletRepository.GetAccount(slackUser.Id);
+
             if (account == null)
             {
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NoAccountChannel);
                 return;
             }
-
-            var recipientUserId = match.Groups[1].Value;
-            var amountToWithdraw = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-            var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? "NXT" : match.Groups[3].Value;
-            var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
-
-            if (transferable == null)
+            if (!(await VerifyParameters(transferable, unit, account, channelSession.Id, amountToWithdraw)))
             {
-                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.UnknownUnit(unit));
                 return;
-            }
-
-            var nxtBalance = await nxtConnector.GetBalance(Nxt.Singleton, account.NxtAccountRs);
-            if (transferable == Nxt.Singleton)
-            {
-                if (amountToWithdraw > nxtBalance + 1)
-                {
-                    await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NotEnoughFunds(nxtBalance, transferable.Name));
-                    return;
-                }
-            }
-            else
-            {
-                if (nxtBalance < 1)
-                {
-                    await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NotEnoughFunds(nxtBalance, Nxt.Singleton.Name));
-                    return;
-                }
-
-                var balance = await nxtConnector.GetBalance(transferable, account.NxtAccountRs);
-                if (balance < amountToWithdraw)
-                {
-                    await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NotEnoughFunds(balance, transferable.Name));
-                    return;
-                }
             }
 
             var recipientAccount = await walletRepository.GetAccount(recipientUserId);
@@ -279,7 +259,7 @@ namespace NxtTipbot
             try
             {
                 var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToWithdraw, "slackbot tip", recipientPublicKey);
-                var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToWithdraw, unit, txId);
+                var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToWithdraw, transferable.Name, txId);
                 await SlackConnector.SendMessage(channelSession.Id, reply, false);
             }
             catch (NxtException e)
