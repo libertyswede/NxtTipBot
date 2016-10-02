@@ -15,6 +15,8 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
   * apitoken - Slack api token key.
   * walletFile - Path to where your Sqlite database file should be stored.
   * nxtServerAddress - The server address to the NXT server you wish to use.
+  * masterKey - A secure 256-bit password used to generate deterministic secret phrases to each user.  
+  If this is unset on start, a password will be generated for you.
 4. In the the src/NxtTipbot directory, type 'dotnet restore' and then 'dotnet run'
 5. Done!
 

@@ -21,29 +21,12 @@ namespace NxtTipbot.Migrations
                 {
                     table.PrimaryKey("PK_account", x => x.id);
                 });
-
-            migrationBuilder.CreateTable(
-                name: "setting",
-                columns: table => new
-                {
-                    id = table.Column<long>(nullable: false)
-                        .Annotation("Autoincrement", true),
-                    key = table.Column<string>(nullable: false),
-                    value = table.Column<string>(nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_setting", x => x.id);
-                });
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "account");
-
-            migrationBuilder.DropTable(
-                name: "setting");
         }
     }
 }

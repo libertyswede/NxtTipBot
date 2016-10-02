@@ -8,7 +8,7 @@ using NxtTipbot;
 namespace NxtTipbot.Migrations
 {
     [DbContext(typeof(WalletContext))]
-    [Migration("20161001150211_Initial")]
+    [Migration("20161002043855_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -31,25 +31,6 @@ namespace NxtTipbot.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("account");
-                });
-
-            modelBuilder.Entity("NxtTipbot.Model.Setting", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnName("id");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasColumnName("key");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasColumnName("value");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("setting");
                 });
         }
     }

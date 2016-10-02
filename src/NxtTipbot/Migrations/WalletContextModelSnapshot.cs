@@ -31,25 +31,6 @@ namespace NxtTipbot.Migrations
 
                     b.ToTable("account");
                 });
-
-            modelBuilder.Entity("NxtTipbot.Model.Setting", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnName("id");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasColumnName("key");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasColumnName("value");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("setting");
-                });
         }
     }
 }

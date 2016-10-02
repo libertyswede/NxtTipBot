@@ -22,6 +22,7 @@ namespace NxtTipbot
             var apiToken = configSettings.Single(c => c.Key == "apitoken").Value;
             var walletFile = configSettings.Single(c => c.Key == "walletFile").Value;
             var nxtServerAddress = configSettings.Single(c => c.Key == "nxtServerAddress").Value;
+            var masterKey = configSettings.Single(c => c.Key == "masterKey").Value;
             var currencyIds = GetCurrenciesConfiguration(configSettings);
             var assetConfigs = GetAssetsConfiguration(configSettings);
 
@@ -38,11 +39,8 @@ namespace NxtTipbot
             var slackHandler = new SlackHandler(nxtConnector, walletRepository, logger);
             var slackConnector = new SlackConnector(apiToken, logger, slackHandler);
 
-            Task.Run(async () =>
-            {
-                await walletRepository.Init(nxtConnector.GenerateMasterKey);
-                nxtConnector.MasterKey = await walletRepository.GetMasterKey();
-            }).Wait();
+            CheckMasterKey(logger, masterKey, nxtConnector);
+            nxtConnector.MasterKey = masterKey;
             slackHandler.SlackConnector = slackConnector;
             var transferables = GetTransferables(currencyIds, assetConfigs, nxtConnector);
             transferables.ForEach(t => slackHandler.AddTransferable(t));
@@ -50,6 +48,20 @@ namespace NxtTipbot
             var slackTask = Task.Run(() => slackConnector.Run());
             Task.WaitAll(slackTask);
             logger.LogInformation("Exiting NxtTipbot");
+        }
+
+        private static void CheckMasterKey(ILogger logger, string masterKey, INxtConnector nxtConnector)
+        {
+            if (!string.IsNullOrEmpty(masterKey))
+            {
+                return;
+            }
+            var sampleMasterKey = nxtConnector.GenerateMasterKey();
+            var error = "Configuration property 'masterKey' has not been set. Please set it to a secure 256-bit password.\n" +
+                        "You may use the generated phrase below:\n" +
+                        sampleMasterKey;
+            logger.LogCritical(error);
+            Environment.Exit(-1);
         }
 
         private static List<NxtTransferable> GetTransferables(IEnumerable<ulong> currencyIds, IEnumerable<AssetConfig> assetConfigs, NxtConnector nxtConnector)

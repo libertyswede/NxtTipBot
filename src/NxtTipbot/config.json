@@ -1,20 +1,21 @@
 {
-    "apitoken": "xxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx",
-    "walletFile": "c:\\temp\\nxttipbot\\nxtwallet.db",
-    "nxtServerAddress": "http://localhost:7876/nxt",
-    "logging": {
-        "logLevel": "Information"
-    }
+  "apitoken": "xxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx",
+  "walletFile": "c:\\nxttipbot\\nxttipbot.db",
+  "nxtServerAddress": "http://localhost:7876/nxt",
+  "masterKey": "",
+  "logging": {
+    "logLevel": "Information"
+  }
 
-    // Samples of how to add an MS Currency or Asset to the tip bot
+  // Samples of how to add an MS Currency or Asset to the tip bot
 
-    // ,"currencies": [
-    //     "18154834130337484019" // NAUT MS currency
-    // ]
-    // ,"assets": [
-    //     {
-    //         "id": "12659653638116877017",
-    //         "name": "superBTC"
-    //     }
-    // ]
+  // ,"currencies": [
+  //     "18154834130337484019" // NAUT MS currency
+  // ]
+  // ,"assets": [
+  //     {
+  //         "id": "12659653638116877017",
+  //         "name": "superBTC"
+  //     }
+  // ]
 }
