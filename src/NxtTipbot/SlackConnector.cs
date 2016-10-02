@@ -56,7 +56,7 @@ namespace NxtTipbot
             }
 
             webSocket = new ClientWebSocket();            
-            await webSocket.ConnectAsync(new System.Uri(websocketUri), CancellationToken.None);
+            await webSocket.ConnectAsync(new Uri(websocketUri), CancellationToken.None);
             await Recieve();
         }
 
@@ -90,6 +90,11 @@ namespace NxtTipbot
                         case "im_created": HandleIMSessionCreated(jObject);
                             break;
                         case "channel_created": HandleChannelCreated(jObject);
+                            break;
+
+                        case "team_join": HandleTeamJoin(jObject);
+                            break;
+                        case "user_change": HandleUserChange(jObject);
                             break;
                         
                         case null: HandleNullType(jObject, json);
@@ -139,6 +144,24 @@ namespace NxtTipbot
             var channelSession = JsonConvert.DeserializeObject<SlackChannelSession>(jObject["channel"].ToString());
             channelSessions.Add(channelSession);
             logger.LogTrace($"#{channelSession.Name} was created.");
+        }
+
+        private void HandleTeamJoin(JObject jObject)
+        {
+            var slackUser = JsonConvert.DeserializeObject<SlackUser>(jObject["user"].ToString());
+            logger.LogTrace($"User {slackUser.Name} has joined the team (id: {slackUser.Id}).");
+            slackUsers.Add(slackUser);
+        }
+
+        private void HandleUserChange(JObject jObject)
+        {
+            var slackUser = JsonConvert.DeserializeObject<SlackUser>(jObject["user"].ToString());
+            var oldSlackUser = slackUsers.Single(u => u.Id == slackUser.Id);
+            if (!string.Equals(oldSlackUser.Name, slackUser.Name))
+            {
+                logger.LogTrace($"User {oldSlackUser.Name} changed his username to {slackUser.Name} (id: {slackUser.Id})");
+                oldSlackUser.Name = slackUser.Name;
+            }
         }
 
         private void HandleNullType(JObject jObject, string json)
