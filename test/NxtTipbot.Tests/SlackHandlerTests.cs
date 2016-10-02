@@ -152,6 +152,7 @@ namespace NxtTipbot.Tests
                 It.Is<NxtAccount>(a => a == TestConstants.SenderAccount), 
                 It.Is<string>(r => r == TestConstants.RecipientAccount.NxtAccountRs), 
                 It.Is<Amount>(a => a.Nxt == withdrawAmount), 
+                It.IsAny<string>(),
                 It.IsAny<string>()))
                     .ReturnsAsync(txId);
 
@@ -247,6 +248,7 @@ namespace NxtTipbot.Tests
                 It.Is<string>(r => r == TestConstants.RecipientAccount.NxtAccountRs),
                 It.Is<NxtTransferable>(tran => tran == transferable),
                 It.Is<decimal>(amount => amount == withdrawAmount), 
+                It.IsAny<string>(),
                 It.IsAny<string>()))
                     .ReturnsAsync(txId);
 
@@ -298,6 +300,7 @@ namespace NxtTipbot.Tests
                 It.Is<NxtAccount>(a => a == TestConstants.SenderAccount), 
                 It.Is<string>(r => r == TestConstants.RecipientAccount.NxtAccountRs), 
                 It.Is<Amount>(a => a.Nxt == tipAmount), 
+                It.IsAny<string>(),
                 It.IsAny<string>()))
                     .ReturnsAsync(txId);
             var message = CreateChannelMessage($"tipbot tip <@{TestConstants.RecipientAccount.SlackId}> 42{unit}");
@@ -399,6 +402,7 @@ namespace NxtTipbot.Tests
                 It.Is<string>(r => r == TestConstants.RecipientAccount.NxtAccountRs),
                 It.Is<NxtTransferable>(tran => tran == transferable),
                 It.Is<decimal>(amount => amount == tipAmount), 
+                It.IsAny<string>(),
                 It.IsAny<string>()))
                     .ReturnsAsync(txId);
 
