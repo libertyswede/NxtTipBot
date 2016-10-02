@@ -19,14 +19,13 @@ namespace NxtTipbot
 
         public const string InvalidAddress = "Not a valid NXT address";
 
-        public static string CurrentBalance(decimal balance)
+        public static string CurrentBalance(decimal balance, NxtTransferable transferable)
         {
-            return $"Your current balance is {balance} NXT.";
-        }
-
-        public static string CurrentBalance(decimal balance, string unit)
-        {
-            return $"You also have {balance} {unit}.";
+            if (transferable.Type == NxtTransferableType.Nxt)
+            {
+                return $"Your current balance is {balance} NXT.";
+            }
+            return $"You also have {balance} {transferable.Name}.";
         }
 
         public static string AccountCreated(string accountRs)

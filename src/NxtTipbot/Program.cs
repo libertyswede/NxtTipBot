@@ -64,9 +64,9 @@ namespace NxtTipbot
             Environment.Exit(-1);
         }
 
-        private static List<NxtTransferable> GetTransferables(IEnumerable<ulong> currencyIds, IEnumerable<AssetConfig> assetConfigs, NxtConnector nxtConnector)
+        private static List<NxtTransferable> GetTransferables(IEnumerable<ulong> currencyIds, IEnumerable<AssetConfig> assetConfigs, INxtConnector nxtConnector)
         {
-            List<NxtTransferable> transferables = new List<NxtTransferable>();
+            var transferables = new List<NxtTransferable>();
             Task.Run(async () =>
             {
                 foreach (var currencyId in currencyIds)

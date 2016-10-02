@@ -13,12 +13,10 @@ namespace NxtTipbot
     public interface INxtConnector
     {
         string MasterKey { set; }
-        Task<decimal> GetNxtBalance(NxtAccount account);
-        Task<ulong> SendMoney(NxtAccount senderAccount, string recipientAddressRs, Amount amount, string message, string recipientPublicKey = "");
+        Task<NxtAsset> GetAsset(ulong assetId, string name);
         Task<NxtCurrency> GetCurrency(ulong currencyId);
         Task<decimal> GetBalance(NxtTransferable transferable, string addressRs);
         Task<ulong> Transfer(NxtAccount senderAccount, string addressRs, NxtTransferable transferable, decimal amount, string message, string recipientPublicKey = "");
-        Task<NxtAsset> GetAsset(ulong assetId, string name);
         string GenerateMasterKey();
         void SetNxtProperties(NxtAccount account);
     }
@@ -72,21 +70,10 @@ namespace NxtTipbot
             account.NxtAccountRs = accountWithPublicKey.AccountRs;
         }
 
-        public async Task<decimal> GetNxtBalance(NxtAccount account)
+        public async Task<NxtAsset> GetAsset(ulong assetId, string name)
         {
-            var balanceReply = await accountService.GetBalance(account.NxtAccountRs);
-            return balanceReply.UnconfirmedBalance.Nxt;
-        }
-
-        public async Task<ulong> SendMoney(NxtAccount senderAccount, string addressRs, Amount amount, string message, string recipientPublicKey = "")
-        {
-            SetNxtProperties(senderAccount);
-            var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, senderAccount.SecretPhrase);
-            parameters.RecipientPublicKey = recipientPublicKey;
-            parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true); 
-            var sendMoneyReply = await accountService.SendMoney(parameters, addressRs, amount);
-            
-            return sendMoneyReply.TransactionId.Value;
+            var asset = await assetExchangeService.GetAsset(assetId);
+            return new NxtAsset(asset, name);
         }
 
         public async Task<NxtCurrency> GetCurrency(ulong currencyId)
@@ -97,11 +84,25 @@ namespace NxtTipbot
         
         public async Task<decimal> GetBalance(NxtTransferable transferable, string addressRs)
         {
-            var unformattedBalance = (transferable.Type == NxtTransferableType.Currency) ? 
-                await GetCurrencyBalance(transferable.Id, addressRs) : 
-                await GetAssetBalance(transferable.Id, addressRs);
+            decimal unformattedBalance;
+            switch (transferable.Type)
+            {
+                case NxtTransferableType.Nxt: unformattedBalance = await GetNxtBalance(addressRs);
+                    break;
+                case NxtTransferableType.Asset: unformattedBalance = await GetAssetBalance(transferable.Id, addressRs);
+                    break;
+                case NxtTransferableType.Currency: unformattedBalance = await GetCurrencyBalance(transferable.Id, addressRs);
+                    break;
+                default: throw new ArgumentException($"Unsupported NxtTransferableType: {transferable.Type}", nameof(transferable));
+            }
             
             return unformattedBalance / (decimal)Math.Pow(10, Math.Max(transferable.Decimals, 1));
+        }
+
+        private async Task<decimal> GetNxtBalance(string addressRs)
+        {
+            var balanceReply = await accountService.GetBalance(addressRs);
+            return balanceReply.UnconfirmedBalance.Nqt;
         }
 
         private async Task<long> GetCurrencyBalance(ulong currencyId, string addressRs)
@@ -124,15 +125,23 @@ namespace NxtTipbot
             parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true);
             var quantity = (long)(amount * (long)Math.Pow(10, Math.Max(transferable.Decimals, 1)));
 
-            if (transferable.Type == NxtTransferableType.Currency)
+            switch (transferable.Type)
             {
-                return await TransferCurrency(addressRs, transferable.Id, quantity, parameters);
+                case NxtTransferableType.Nxt: return await SendMoney(senderAccount, addressRs, quantity, message, recipientPublicKey);
+                case NxtTransferableType.Asset: return await TransferAsset(addressRs, transferable.Id, quantity, parameters);
+                case NxtTransferableType.Currency: return await TransferCurrency(addressRs, transferable.Id, quantity, parameters);
+                default: throw new ArgumentException($"Unsupported NxtTransferableType: {transferable.Type}", nameof(transferable));
             }
-            else if (transferable.Type == NxtTransferableType.Asset)
-            {
-                return await TransferAsset(addressRs, transferable.Id, quantity, parameters);
-            }
-            throw new ArgumentException($"Unsupported NxtTransferableType: {transferable.Type}", nameof(transferable));
+        }
+
+        private async Task<ulong> SendMoney(NxtAccount senderAccount, string addressRs, long amountNqt, string message, string recipientPublicKey = "")
+        {
+            var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, senderAccount.SecretPhrase);
+            parameters.RecipientPublicKey = recipientPublicKey;
+            parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true);
+            var sendMoneyReply = await accountService.SendMoney(parameters, addressRs, Amount.CreateAmountFromNqt(amountNqt));
+
+            return sendMoneyReply.TransactionId.Value;
         }
 
         private async Task<ulong> TransferAsset(string addressRs, ulong assetId, long quantityQnt, CreateTransactionParameters parameters)
@@ -145,12 +154,6 @@ namespace NxtTipbot
         {
             var transferCurrencyReply = await monetarySystemService.TransferCurrency(addressRs, currencyId, units, parameters);
             return transferCurrencyReply.TransactionId.Value;
-        }
-
-        public async Task<NxtAsset> GetAsset(ulong assetId, string name)
-        {
-            var asset = await assetExchangeService.GetAsset(assetId);
-            return new NxtAsset(asset, name);
         }
     }
 }

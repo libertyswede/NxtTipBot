@@ -21,8 +21,18 @@ namespace NxtTipbot
 
     public enum NxtTransferableType
     {
+        Nxt,
         Asset,
         Currency
+    }
+
+    public class Nxt : NxtTransferable
+    {
+        public static readonly Nxt Singleton = new Nxt();
+        public override NxtTransferableType Type { get { return NxtTransferableType.Nxt; } }
+        private Nxt() : base(0, "NXT", 8)
+        {
+        }
     }
 
     public class NxtAsset : NxtTransferable
