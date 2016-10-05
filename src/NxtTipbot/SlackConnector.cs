@@ -62,47 +62,54 @@ namespace NxtTipbot
 
         private async Task Recieve()
         {
-            var buffer = new byte[16384];
+            WebSocketReceiveResult result;
+            var buffer = new byte[1024];
+
             while (webSocket.State == WebSocketState.Open)
             {
-                var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                if (result.MessageType == WebSocketMessageType.Close)
+                string json = string.Empty;
+                do
                 {
-                    logger.LogInformation("MessageType.Close recieved, closing connection to Slack.");
-                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-                }
-                else
-                {
-                    var json = encoder.GetString(buffer, 0, result.Count);
-                    var jObject = JObject.Parse(json);
-                    var type = (string)jObject["type"];
-                    switch (type)
+                    result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+                    if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        case "presence_change":// ignore these
-                        case "reconnect_url":
-                        case "user_typing":
-                        case "hello":
-                        case "reaction_added":
-                            break;
-
-                        case "message": await HandleMessage(json);
-                            break;
-                        
-                        case "im_created": HandleIMSessionCreated(jObject);
-                            break;
-                        case "channel_created": HandleChannelCreated(jObject);
-                            break;
-
-                        case "team_join": HandleTeamJoin(jObject);
-                            break;
-                        case "user_change": HandleUserChange(jObject);
-                            break;
-                        
-                        case null: HandleNullType(jObject, json);
-                            break;
-                        default: logger.LogTrace($"Data recieved: {json}");
-                            break; 
+                        logger.LogInformation("MessageType.Close recieved, closing connection to Slack.");
+                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+                        return;
                     }
+
+                    json += encoder.GetString(buffer, 0, result.Count);
+                } while (result.Count == buffer.Length);
+                
+                var jObject = JObject.Parse(json);
+                var type = (string)jObject["type"];
+                switch (type)
+                {
+                    case "presence_change":// ignore these
+                    case "reconnect_url":
+                    case "user_typing":
+                    case "hello":
+                    case "reaction_added":
+                        break;
+
+                    case "message": await HandleMessage(json);
+                        break;
+                        
+                    case "im_created": HandleIMSessionCreated(jObject);
+                        break;
+                    case "channel_created": HandleChannelCreated(jObject);
+                        break;
+
+                    case "team_join": HandleTeamJoin(jObject);
+                        break;
+                    case "user_change": HandleUserChange(jObject);
+                        break;
+                        
+                    case null: HandleNullType(jObject, json);
+                        break;
+                    default: logger.LogTrace($"Data recieved: {json}");
+                        break; 
                 }
             }
         }
