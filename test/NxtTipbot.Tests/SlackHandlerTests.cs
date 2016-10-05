@@ -1,7 +1,6 @@
 ﻿using Xunit;
 using Moq;
 using Microsoft.Extensions.Logging;
-using NxtLib;
 using System.Threading.Tasks;
 using NxtTipbot.Model;
 
@@ -260,9 +259,9 @@ namespace NxtTipbot.Tests
         }
 
         [Theory]
-        [InlineData("tipbot tip")]
-        [InlineData(" TIPBOT TIP")]
-        [InlineData("tIpBoT tIp")]
+        [InlineData("tipper tip")]
+        [InlineData(" TIPPER TIP")]
+        [InlineData("tIpPeR tIp")]
         public async void TipShouldReturnNoAccount(string command)
         {
             walletRepositoryMock.Setup(r => r.GetAccount(It.Is<string>(a => a == slackUser.Id))).ReturnsAsync(null);
@@ -279,7 +278,7 @@ namespace NxtTipbot.Tests
         {
             const decimal balance = 4;
             SetupNxtAccount(TestConstants.SenderAccount, balance);
-            var message = CreateChannelMessage($"tipbot tip <@{TestConstants.RecipientAccount.SlackId}> 42");
+            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42");
 
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
@@ -306,7 +305,7 @@ namespace NxtTipbot.Tests
                 It.IsAny<string>()))
                     .ReturnsAsync(txId);
 
-            var message = CreateChannelMessage($"tipbot tip <@{TestConstants.RecipientAccount.SlackId}> 42{unit}");
+            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42{unit}");
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id, 
@@ -318,7 +317,7 @@ namespace NxtTipbot.Tests
         {
             const string unknownUnit = "UNKNOWNS";
             SetupNxtAccount(TestConstants.SenderAccount, 1);
-            var message = CreateChannelMessage($"tipbot tip <@{TestConstants.RecipientAccount.SlackId}> 42 {unknownUnit}");
+            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42 {unknownUnit}");
 
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
@@ -343,7 +342,7 @@ namespace NxtTipbot.Tests
             const decimal balance = 0.9M;
             slackHandler.AddTransferable(transferable);
             SetupNxtAccount(TestConstants.SenderAccount, balance);
-            var message = CreateChannelMessage($"tipbot tip <@{TestConstants.RecipientAccount.SlackId}> 42 {transferable.Name}");
+            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42 {transferable.Name}");
 
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
@@ -369,7 +368,7 @@ namespace NxtTipbot.Tests
             const decimal balance = 1M;
             SetupNxtAccount(TestConstants.SenderAccount, nxtBalance);
             SetupTransferable(transferable, balance, TestConstants.SenderAccount.NxtAccountRs);
-            var message = CreateChannelMessage($"tipbot tip <@{TestConstants.RecipientAccount.SlackId}> 42 {transferable.Name}");
+            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42 {transferable.Name}");
 
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
@@ -398,7 +397,7 @@ namespace NxtTipbot.Tests
             SetupNxtAccount(TestConstants.SenderAccount, nxtBalance);
             SetupNxtAccount(TestConstants.RecipientAccount, 0);
             SetupTransferable(transferable, balance, TestConstants.SenderAccount.NxtAccountRs);
-            var message = CreateChannelMessage($"tipbot tip <@{TestConstants.RecipientAccount.SlackId}> 42 {transferable.Name}");
+            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42 {transferable.Name}");
             nxtConnectorMock.Setup(c => c.Transfer(
                 It.Is<NxtAccount>(a => a == TestConstants.SenderAccount), 
                 It.Is<string>(r => r == TestConstants.RecipientAccount.NxtAccountRs),

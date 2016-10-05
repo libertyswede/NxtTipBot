@@ -196,7 +196,7 @@ namespace NxtTipbot
             }
             try
             {
-                var txId = await nxtConnector.Transfer(account, address, transferable, amountToWithdraw, "withdraw from slack tipbot");
+                var txId = await nxtConnector.Transfer(account, address, transferable, amountToWithdraw, "withdraw from slack tipper");
                 await SlackConnector.SendMessage(imSession.Id, MessageConstants.Withdraw(amountToWithdraw, transferable.Name, txId), false);
             }
             catch (ArgumentException e)
@@ -258,7 +258,7 @@ namespace NxtTipbot
 
             try
             {
-                var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToWithdraw, "slackbot tip", recipientPublicKey);
+                var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToWithdraw, "tip from slack tipper", recipientPublicKey);
                 var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToWithdraw, transferable.Name, txId);
                 await SlackConnector.SendMessage(channelSession.Id, reply, false);
             }
@@ -279,7 +279,7 @@ namespace NxtTipbot
 
         private static Match IsTipCommand(string message)
         {
-            var regex = new Regex("^\\s*(?i)tipbot tip(?-i) <@([A-Za-z0-9]+)> ([0-9]+\\.?[0-9]*) ?([A-Za-z]+)?");
+            var regex = new Regex("^\\s*(?i)tipper tip(?-i) <@([A-Za-z0-9]+)> ([0-9]+\\.?[0-9]*) ?([A-Za-z]+)?");
             var match = regex.Match(message);
             return match;
         }

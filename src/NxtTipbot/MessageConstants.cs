@@ -7,7 +7,7 @@ namespace NxtTipbot
             + "_deposit_ - shows your deposit address (or creates one if you don't have one already)\n"
             + "_withdraw [nxt address] amount [unit]_ - withdraws amount to specified NXT address\n\n"
             + "*Channel Commands*\n"
-            + "_tipbot tip @user amount [unit]_ - sends a tip to specified user";
+            + "_tipper tip @user amount [unit]_ - sends a tip to specified user";
         
         public const string UnknownCommandReply = "huh? try typing *help* for a list of available commands.";
         
