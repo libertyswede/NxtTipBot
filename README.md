@@ -26,6 +26,7 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 
 # Todo
 * Add custom messages like: Tipper tip @peter2615 20 NXT for being so sexy
+* Add support for multiple recipients like: tipper tip @user1, @user2, @user3 20 NXT 
 * Add support for more units (USD, EUR, beer, etc.).
 * Add file logging (NLog).
 * Use AES 256 encryption for secret phrases.  
