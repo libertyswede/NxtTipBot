@@ -111,7 +111,7 @@ namespace NxtTipbot
             foreach (var transferable in transferables)
             {
                 var balance = await nxtConnector.GetBalance(transferable, account.NxtAccountRs);
-                if (balance > 0)
+                if (balance > 0 || transferable == Nxt.Singleton)
                 {
                     message += MessageConstants.CurrentBalance(balance, transferable) + "\n";
                 }

@@ -62,7 +62,19 @@ namespace NxtTipbot.Tests
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
                 It.Is<string>(input => input.Equals(MessageConstants.CurrentBalance(expectedBalance, Nxt.Singleton))), true));
         }
-        
+
+        [Fact]
+        public async void BalanceShouldReturnZeroNxtBalance()
+        {
+            const decimal expectedBalance = 0M;
+            SetupNxtAccount(TestConstants.SenderAccount, expectedBalance);
+
+            await slackHandler.InstantMessageCommand("balance", slackUser, imSession);
+
+            slackConnectorMock.Verify(c => c.SendMessage(imSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.CurrentBalance(expectedBalance, Nxt.Singleton))), true));
+        }
+
         [Fact]
         public async void BalanceShouldReturnCorrectCurrencyBalance()
         {
