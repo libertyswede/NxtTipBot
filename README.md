@@ -25,8 +25,8 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 2. In the test/NxtTipbot.Tests directory, type 'dotnet restore' and the 'dotnet test'
 
 # Todo
-* Add custom messages like: Tipper tip @peter2615 20 NXT for being so sexy
-* Add support for multiple recipients like: tipper tip @user1, @user2, @user3 20 NXT 
+* Add custom messages like: _tipper tip @peter2615 20 NXT **for being so sexy**_
+* Add support for multiple recipients like: _tipper tip @user1, @user2, @user3 20 NXT_
 * Add support for more units (USD, EUR, beer, etc.).
 * Add file logging (NLog).
 * Use AES 256 encryption for secret phrases.  
