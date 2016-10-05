@@ -133,10 +133,12 @@ namespace NxtTipbot
                 Id = (string)jObject["channel"]["id"],
                 UserId = (string)jObject["user"]
             };
-            imSessions.Add(imSession);
-
-            var slackUser = slackUsers.Single(u => u.Id == imSession.UserId);
-            logger.LogTrace($"IM session with user {slackUser.Name} was created.");
+            if (imSessions.All(im => im.Id != imSession.Id))
+            {
+                imSessions.Add(imSession);
+                var slackUser = slackUsers.Single(u => u.Id == imSession.UserId);
+                logger.LogTrace($"IM session with user {slackUser.Name} was created.");
+            }
         }
 
         private void HandleChannelCreated(JObject jObject)
