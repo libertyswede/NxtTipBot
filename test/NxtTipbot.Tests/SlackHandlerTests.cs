@@ -128,13 +128,16 @@ namespace NxtTipbot.Tests
                 It.Is<string>(input => input.Equals(MessageConstants.NoAccount)), true));
         }
 
-        [Fact]
-        public async void WithdrawNxtShouldReturnNotEnoughFunds()
+        [Theory]
+        [InlineData("42")]
+        [InlineData("4")]
+        [InlineData("3.00001")]
+        public async void WithdrawNxtShouldReturnNotEnoughFunds(string amount)
         {
             const decimal balance = 4;
             SetupNxtAccount(TestConstants.SenderAccount, balance);
 
-            await slackHandler.InstantMessageCommand($"withdraw {TestConstants.RecipientAccount.NxtAccountRs} 42", slackUser, imSession);
+            await slackHandler.InstantMessageCommand($"withdraw {TestConstants.RecipientAccount.NxtAccountRs} {amount}", slackUser, imSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
                 It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFunds(balance, "NXT"))), true));
@@ -297,8 +300,11 @@ namespace NxtTipbot.Tests
                 It.Is<string>(input => input.Equals(MessageConstants.CantTipYourselfChannel)), true));
         }
 
-        [Fact]
-        public async void TipNxtShouldReturnNotEnoughFunds()
+        [Theory]
+        [InlineData("42")]
+        [InlineData("4")]
+        [InlineData("3.00001")]
+        public async void TipNxtShouldReturnNotEnoughFunds(string amount)
         {
             const decimal balance = 4;
             SetupNxtAccount(TestConstants.SenderAccount, balance);
