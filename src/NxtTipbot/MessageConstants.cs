@@ -11,9 +11,11 @@ namespace NxtTipbot
         
         public const string UnknownCommandReply = "huh? try typing *help* for a list of available commands.";
         
-        public const string UnknownChannelCommandReply = "huh? try typing *help* for a list of available commands.";
+        public const string UnknownChannelCommandReply = "huh? try typing *help* in a direct message for a list of available commands.";
 
         public const string NoAccount = "You do currently not have an account, try *deposit* command to create one.";
+
+        public const string CantTipBotChannel = "Thanx, but no thanx. I'm already one of the super wealthy ya know ;)";
 
         public const string NoAccountChannel = "Sorry mate, you do not have an account. Try sending me *help* in a direct message and I'll help you out set one up.";
 

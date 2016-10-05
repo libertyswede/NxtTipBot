@@ -238,6 +238,11 @@ namespace NxtTipbot
             var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
             var account = await walletRepository.GetAccount(slackUser.Id);
 
+            if (recipientUserId == SlackConnector.SelfId)
+            {
+                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.CantTipBotChannel);
+                return;
+            }
             if (account == null)
             {
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NoAccountChannel);

@@ -14,6 +14,7 @@ namespace NxtTipbot
 {
     public interface ISlackConnector
     {
+        string SelfId { get; }
         Task SendMessage(string channelId, string message, bool unfurl_links = true);
         Task<string> GetInstantMessageId(string userId);
     }
@@ -24,7 +25,7 @@ namespace NxtTipbot
         private readonly ILogger logger;
         private readonly ISlackHandler slackHandler;
 
-        private string selfId;
+        public string SelfId { get; private set; }
         private List<SlackChannelSession> channelSessions;
         private List<SlackUser> slackUsers;
         private List<SlackIMSession> imSessions;
@@ -49,7 +50,7 @@ namespace NxtTipbot
                 logger.LogTrace($"Initial handshake reply with rtm.start: {json}");
                 var jObject = JObject.Parse(json);
                 websocketUri = (string)jObject["url"];
-                selfId = (string)jObject["self"]["id"];
+                SelfId = (string)jObject["self"]["id"];
                 channelSessions = JsonConvert.DeserializeObject<List<SlackChannelSession>>(jObject["channels"].ToString());
                 slackUsers = JsonConvert.DeserializeObject<List<SlackUser>>(jObject["users"].ToString());
                 imSessions = JsonConvert.DeserializeObject<List<SlackIMSession>>(jObject["ims"].ToString());
@@ -121,7 +122,7 @@ namespace NxtTipbot
             var channel = channelSessions.SingleOrDefault(c => c.Id == message.ChannelId);
             var instantMessage = imSessions.SingleOrDefault(im => im.Id == message.ChannelId);
             
-            if (slackUser != null && slackUser.Id != selfId)
+            if (slackUser != null && slackUser.Id != SelfId)
             {
                 if (channel != null && message.Text.StartsWith("tipper", StringComparison.OrdinalIgnoreCase))
                 {
@@ -194,6 +195,10 @@ namespace NxtTipbot
 
         public async Task<string> GetInstantMessageId(string userId)
         {
+            if (userId == SelfId)
+            {
+                throw new ArgumentException("Cannot instant message with yourself", nameof(userId));
+            }
             var id = imSessions.SingleOrDefault(im => im.UserId == userId)?.Id;
             if (id == null)
             {
