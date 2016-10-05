@@ -16,9 +16,11 @@ namespace NxtTipbot.Tests
         private readonly SlackIMSession imSession = new SlackIMSession { Id = "imSessionId", UserId = "SlackUserId" };
         private readonly SlackChannelSession channelSession = new SlackChannelSession { Id = "channelSessionId", Name = "#general" };
         private readonly SlackUser slackUser = new SlackUser { Id = "SlackUserId", Name = "XunitBot" };
+        private readonly string botUserId = "botUserId";
 
         public SlackHandlerTests()
         {
+            slackConnectorMock.SetupGet(c => c.SelfId).Returns(botUserId);
             slackHandler = new SlackHandler(nxtConnectorMock.Object, walletRepositoryMock.Object, loggerMock.Object);
             slackHandler.SlackConnector = slackConnectorMock.Object;
         }
@@ -271,6 +273,17 @@ namespace NxtTipbot.Tests
 
             slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id, 
                 It.Is<string>(input => input.Equals(MessageConstants.NoAccountChannel)), true));
+        }
+
+        [Fact]
+        public async void TipShouldReturnCantTipBot()
+        {
+            var message = CreateChannelMessage($"tipper tip <@{botUserId}> 42");
+
+            await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.CantTipBotChannel)), true));
         }
 
         [Fact]
