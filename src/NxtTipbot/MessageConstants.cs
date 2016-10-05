@@ -17,6 +17,8 @@ namespace NxtTipbot
 
         public const string CantTipBotChannel = "Thanx, but no thanx. I'm already one of the super wealthy ya know ;)";
 
+        public const string CantTipYourselfChannel = "Have you ever tried to take money out of your wallet, and then put it back again? Did it make you feel any richer?";
+
         public const string NoAccountChannel = "Sorry mate, you do not have an account. Try sending me *help* in a direct message and I'll help you out set one up.";
 
         public const string InvalidAddress = "Not a valid NXT address";

@@ -287,6 +287,17 @@ namespace NxtTipbot.Tests
         }
 
         [Fact]
+        public async void TipShouldReturnCantTipYourself()
+        {
+            var message = CreateChannelMessage($"tipper tip <@{TestConstants.SenderAccount.SlackId}> 42");
+
+            await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.CantTipYourselfChannel)), true));
+        }
+
+        [Fact]
         public async void TipNxtShouldReturnNotEnoughFunds()
         {
             const decimal balance = 4;

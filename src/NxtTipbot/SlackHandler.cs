@@ -243,6 +243,11 @@ namespace NxtTipbot
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.CantTipBotChannel);
                 return;
             }
+            if (recipientUserId == slackUser.Id)
+            {
+                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.CantTipYourselfChannel);
+                return;
+            }
             if (account == null)
             {
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NoAccountChannel);
