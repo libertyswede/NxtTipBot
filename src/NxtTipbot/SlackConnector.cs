@@ -82,6 +82,7 @@ namespace NxtTipbot
                         case "reconnect_url":
                         case "user_typing":
                         case "hello":
+                        case "reaction_added":
                             break;
 
                         case "message": await HandleMessage(json);
