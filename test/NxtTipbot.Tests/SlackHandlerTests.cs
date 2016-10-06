@@ -160,8 +160,26 @@ namespace NxtTipbot.Tests
         [InlineData(" NXT")]
         public async void WithdrawNxtShouldSucceed(string unit)
         {
-            const decimal balance = 400;
             const decimal withdrawAmount = 42;
+            var message = $"withdraw {TestConstants.RecipientAccount.NxtAccountRs} {withdrawAmount}{unit}";
+            await TryWithdrawNxt(message, withdrawAmount);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(5)]
+        public async void WithdrawNxtShouldSucceed(int whiteSpaceCount)
+        {
+            var whiteSpaces = new string(' ', whiteSpaceCount);
+            const decimal withdrawAmount = 42;
+            var message = $"withdraw{whiteSpaces}{TestConstants.RecipientAccount.NxtAccountRs}{whiteSpaces}{withdrawAmount}{whiteSpaces}NXT";
+            await TryWithdrawNxt(message, withdrawAmount);
+        }
+
+        public async Task TryWithdrawNxt(string message, decimal withdrawAmount)
+        {
+            const decimal balance = 400;
             const ulong txId = 928347;
             SetupNxtAccount(TestConstants.SenderAccount, balance);
             nxtConnectorMock.Setup(c => c.Transfer(
@@ -173,9 +191,9 @@ namespace NxtTipbot.Tests
                 It.IsAny<string>()))
                     .ReturnsAsync(txId);
 
-            await slackHandler.InstantMessageCommand($"withdraw {TestConstants.RecipientAccount.NxtAccountRs} {withdrawAmount}{unit}", slackUser, imSession);
+            await slackHandler.InstantMessageCommand(message, slackUser, imSession);
 
-            slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
+            slackConnectorMock.Verify(c => c.SendMessage(imSession.Id,
                 It.Is<string>(input => input.Equals(MessageConstants.Withdraw(withdrawAmount, "NXT", txId))), false));
         }
 
