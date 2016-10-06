@@ -185,7 +185,9 @@ namespace NxtTipbot
 
         public async Task SendMessage(string channelId, string message, bool unfurl_links = true)
         {
-            logger.LogTrace($"Sending chat.postMessage to channel id: {channelId}, message: {message}, unfurl_links: {unfurl_links}");
+            var debugTarget = channelSessions.SingleOrDefault(s => s.Id == channelId)?.Name ?? 
+                slackUsers.Single(u => u.Id == imSessions.Single(s => s.Id == channelId).UserId).Name;
+            logger.LogTrace($"Sending chat.postMessage to channel id: {channelId} ({debugTarget}), message: {message}, unfurl_links: {unfurl_links}");
             using (var httpClient = new HttpClient())
             using (var response = await httpClient.GetAsync($"https://slack.com/api/chat.postMessage?token={apiToken}&channel={channelId}&text={message}&unfurl_links={unfurl_links}&as_user=true"))
             using (var content = response.Content)
