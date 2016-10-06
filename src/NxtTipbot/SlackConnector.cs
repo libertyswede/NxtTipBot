@@ -92,6 +92,8 @@ namespace NxtTipbot
                     case "user_typing":
                     case "hello":
                     case "reaction_added":
+                    case "file_shared":
+                    case "file_public":
                         break;
 
                     case "message": await HandleMessage(json);
