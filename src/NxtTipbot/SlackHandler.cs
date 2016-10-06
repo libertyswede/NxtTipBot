@@ -235,6 +235,7 @@ namespace NxtTipbot
             var recipientUserId = match.Groups[1].Value;
             var amountToWithdraw = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? Nxt.Singleton.Name : match.Groups[3].Value;
+            var comment = string.IsNullOrEmpty(match.Groups[4].Value) ? string.Empty : match.Groups[4].Value;
             var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
             var account = await walletRepository.GetAccount(slackUser.Id);
 
@@ -253,6 +254,11 @@ namespace NxtTipbot
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.NoAccountChannel);
                 return;
             }
+            if (!string.IsNullOrEmpty(comment) && comment.Length > 512)
+            {
+                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.CommentTooLongChannel);
+                return;
+            }
             if (!(await VerifyParameters(transferable, unit, account, channelSession.Id, amountToWithdraw)))
             {
                 return;
@@ -268,8 +274,9 @@ namespace NxtTipbot
 
             try
             {
-                var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToWithdraw, "tip from slack tipper", recipientPublicKey);
-                var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToWithdraw, transferable.Name, txId);
+                var txMessage = MessageConstants.NxtTipTransactionMessage(comment);
+                var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToWithdraw, txMessage, recipientPublicKey);
+                var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToWithdraw, transferable.Name, txId, comment);
                 await SlackConnector.SendMessage(channelSession.Id, reply, false);
             }
             catch (NxtException e)
@@ -289,7 +296,7 @@ namespace NxtTipbot
 
         private static Match IsTipCommand(string message)
         {
-            var regex = new Regex("^\\s*(?i)tipper +tip(?-i) +<@([A-Za-z0-9]+)> +([0-9]+\\.?[0-9]*) *([A-Za-z]+)?");
+            var regex = new Regex("^\\s*(?i)tipper +tip(?-i) +<@([A-Za-z0-9]+)> +([0-9]+\\.?[0-9]*) *([A-Za-z]+)? *(.*)");
             var match = regex.Match(message);
             return match;
         }

@@ -23,6 +23,8 @@ namespace NxtTipbot
 
         public const string InvalidAddress = "Not a valid NXT address";
 
+        public const string CommentTooLongChannel = "Are you writing an article? Try shortening your comment.";
+
         public static string CurrentBalance(decimal balance, NxtTransferable transferable)
         {
             if (transferable.Type == NxtTransferableType.Nxt)
@@ -65,9 +67,19 @@ namespace NxtTipbot
                     "Type *help* to get more information about what commands are available.";
         }
 
-        public static string TipSentChannel(string senderSlackId, string recipientSlackId, decimal amount, string unit, ulong txId)
+        public static string TipSentChannel(string senderSlackId, string recipientSlackId, decimal amount, string unit, ulong txId, string message)
         {
-            return $"<@{senderSlackId}> => <@{recipientSlackId}> {amount} {unit} (https://nxtportal.org/transactions/{txId})";
+            return $"<@{senderSlackId}> => <@{recipientSlackId}> {amount} {unit} {message} (https://nxtportal.org/transactions/{txId})";
+        }
+
+        public static string NxtTipTransactionMessage(string comment)
+        {
+            var message = "tip from slack tipper";
+            if (!string.IsNullOrEmpty(comment))
+            {
+                message += $" - {comment}";
+            }
+            return message;
         }
     }
 }
