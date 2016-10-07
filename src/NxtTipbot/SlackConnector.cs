@@ -90,7 +90,7 @@ namespace NxtTipbot
                 }
                 catch (Exception)
                 {
-                    logger.LogCritical($"Error when parsing json: {json}");
+                    logger.LogCritical($"Error when parsing json, length: {json.Length}, json text: {json}");
                     throw;
                 }
                 var type = (string)jObject["type"];
