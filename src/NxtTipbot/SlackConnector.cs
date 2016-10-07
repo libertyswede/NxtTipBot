@@ -82,8 +82,17 @@ namespace NxtTipbot
 
                     json += encoder.GetString(buffer, 0, result.Count);
                 } while (result.Count == buffer.Length);
-                
-                var jObject = JObject.Parse(json);
+
+                JObject jObject = null;
+                try
+                {
+                    jObject = JObject.Parse(json);
+                }
+                catch (Exception)
+                {
+                    logger.LogCritical($"Error when parsing json: {json}");
+                    throw;
+                }
                 var type = (string)jObject["type"];
                 switch (type)
                 {
