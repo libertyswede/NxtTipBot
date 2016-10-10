@@ -25,8 +25,11 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 2. In the test/NxtTipbot.Tests directory, type 'dotnet restore' and the 'dotnet test'
 
 # Todo
-* Add support for multiple recipients like: _tipper tip @user1, @user2, @user3 20 NXT_
+* Add sender & recipient to transaction message.
+* Multiple recipients like: _tipper tip @user1, @user2, @user3 20 NXT_
+* Stats command with support for total number of tips sent and total amount sent.
 * Add support for more units (USD, EUR, beer, etc.).
+* Using icons as units.
 * Add file logging (NLog).
 * Use AES 256 encryption for secret phrases.  
   Decryption key to be stored in config file/passed as parameter/read from environment variable.
