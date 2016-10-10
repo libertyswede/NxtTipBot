@@ -88,7 +88,7 @@ namespace NxtTipbot.Tests
         {
             await BalanceShouldReturnCorrectTransferableBalance(TestConstants.Asset);
         }
-        
+
         private async Task BalanceShouldReturnCorrectTransferableBalance(NxtTransferable transferable)
         {
             const decimal expectedBalance = 42M;

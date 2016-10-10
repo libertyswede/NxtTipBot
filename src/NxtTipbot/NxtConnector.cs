@@ -96,7 +96,7 @@ namespace NxtTipbot
                 default: throw new ArgumentException($"Unsupported NxtTransferableType: {transferable.Type}", nameof(transferable));
             }
             
-            return unformattedBalance / (decimal)Math.Pow(10, Math.Max(transferable.Decimals, 1));
+            return unformattedBalance / (decimal)Math.Pow(10, transferable.Decimals);
         }
 
         private async Task<decimal> GetNxtBalance(string addressRs)
@@ -123,7 +123,7 @@ namespace NxtTipbot
             var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, senderAccount.SecretPhrase);
             parameters.RecipientPublicKey = recipientPublicKey;
             parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true);
-            var quantity = (long)(amount * (long)Math.Pow(10, Math.Max(transferable.Decimals, 1)));
+            var quantity = (long)(amount * (long)Math.Pow(10, transferable.Decimals));
 
             switch (transferable.Type)
             {
