@@ -17,6 +17,7 @@ namespace NxtTipbot
         string SelfId { get; }
         Task SendMessage(string channelId, string message, bool unfurl_links = true);
         Task<string> GetInstantMessageId(string userId);
+        SlackUser GetUser(string userId);
     }
 
     public class SlackConnector : ISlackConnector
@@ -228,6 +229,11 @@ namespace NxtTipbot
                 }
             }
             return id;
+        }
+
+        public SlackUser GetUser(string userId)
+        {
+            return slackUsers.SingleOrDefault(u => u.Id == userId);
         }
     }
 }

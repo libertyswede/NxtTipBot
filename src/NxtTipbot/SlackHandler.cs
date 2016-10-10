@@ -274,7 +274,8 @@ namespace NxtTipbot
 
             try
             {
-                var txMessage = MessageConstants.NxtTipTransactionMessage(comment);
+                var recipientUserName = SlackConnector.GetUser(recipientUserId).Name;
+                var txMessage = MessageConstants.NxtTipTransactionMessage(slackUser.Name, recipientUserName,  comment);
                 var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToWithdraw, txMessage, recipientPublicKey);
                 var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToWithdraw, transferable.Name, txId, comment);
                 await SlackConnector.SendMessage(channelSession.Id, reply, false);

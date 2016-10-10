@@ -25,7 +25,6 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 2. In the test/NxtTipbot.Tests directory, type 'dotnet restore' and the 'dotnet test'
 
 # Todo
-* Add sender & recipient to transaction message on NXT blockchain.
 * Make bot react to @tipper as well as 'tipper' when using tip command.
 * Support having tip command as a part of a multi line chat message.
 * Multiple recipients like: _tipper tip @user1, @user2, @user3 20 NXT_

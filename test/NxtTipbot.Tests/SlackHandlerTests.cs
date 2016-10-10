@@ -16,11 +16,13 @@ namespace NxtTipbot.Tests
         private readonly SlackIMSession imSession = new SlackIMSession { Id = "imSessionId", UserId = "SlackUserId" };
         private readonly SlackChannelSession channelSession = new SlackChannelSession { Id = "channelSessionId", Name = "#general" };
         private readonly SlackUser slackUser = new SlackUser { Id = "SlackUserId", Name = "XunitBot" };
+        private readonly SlackUser recipientUser = new SlackUser { Id = TestConstants.RecipientAccount.SlackId, Name = "RecipientAccount" };
         private readonly string botUserId = "botUserId";
 
         public SlackHandlerTests()
         {
             slackConnectorMock.SetupGet(c => c.SelfId).Returns(botUserId);
+            slackConnectorMock.Setup(c => c.GetUser(It.Is<string>(recipient => string.Equals(recipient, TestConstants.RecipientAccount.SlackId)))).Returns(recipientUser);
             slackHandler = new SlackHandler(nxtConnectorMock.Object, walletRepositoryMock.Object, loggerMock.Object);
             slackHandler.SlackConnector = slackConnectorMock.Object;
         }
@@ -381,6 +383,23 @@ namespace NxtTipbot.Tests
                 It.IsAny<NxtTransferable>(),
                 It.IsAny<decimal>(),
                 It.Is<string>(msg => msg.EndsWith(comment)),
+                It.IsAny<string>()));
+        }
+
+        [Fact]
+        public async void TipNxtShouldSucceedWithRecipientAndSenderInTransactionMessage()
+        {
+            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42 NXT");
+            var transactionMessage = MessageConstants.NxtTipTransactionMessage(slackUser.Name, recipientUser.Name, "");
+
+            await TipNxtShouldSucceed(message, "");
+
+            nxtConnectorMock.Verify(c => c.Transfer(
+                It.IsAny<NxtAccount>(),
+                It.IsAny<string>(),
+                It.IsAny<NxtTransferable>(),
+                It.IsAny<decimal>(),
+                It.Is<string>(msg => msg.Equals(transactionMessage)),
                 It.IsAny<string>()));
         }
 

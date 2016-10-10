@@ -72,9 +72,9 @@ namespace NxtTipbot
             return $"<@{senderSlackId}> => <@{recipientSlackId}> {amount} {unit} {message} (https://nxtportal.org/transactions/{txId})";
         }
 
-        public static string NxtTipTransactionMessage(string comment)
+        public static string NxtTipTransactionMessage(string sender, string recipient, string comment)
         {
-            var message = "tip from slack tipper";
+            var message = $"tip from slack tipper - from {sender} to {recipient}";
             if (!string.IsNullOrEmpty(comment))
             {
                 message += $" - {comment}";
