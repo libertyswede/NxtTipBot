@@ -26,6 +26,8 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 
 # Todo
 * Add sender & recipient to transaction message.
+* Make bot react to @tipper as well as tipper when using tip command.
+* Support having tip command as a part of a multi line chat message.
 * Multiple recipients like: _tipper tip @user1, @user2, @user3 20 NXT_
 * Stats command with support for total number of tips sent and total amount sent.
 * Add support for more units (USD, EUR, beer, etc.).
