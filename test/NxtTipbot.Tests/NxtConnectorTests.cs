@@ -3,6 +3,7 @@ using NxtLib;
 using NxtLib.Accounts;
 using NxtLib.AssetExchange;
 using NxtLib.MonetarySystem;
+using System.Collections.Generic;
 using Xunit;
 
 namespace NxtTipbot.Tests
@@ -31,7 +32,7 @@ namespace NxtTipbot.Tests
             const decimal amount = 1.123M;
             var expectedQuantity = (long)(amount * 10000);
             assetExchangeServiceMock.Setup(s => s.TransferAsset(It.IsAny<Account>(), It.IsAny<ulong>(), It.IsAny<long>(), It.IsAny<CreateTransactionParameters>()))
-                    .ReturnsAsync(new NxtLib.TransactionCreatedReply { TransactionId = 123 });
+                    .ReturnsAsync(new TransactionCreatedReply { TransactionId = 123 });
 
             await nxtConnector.Transfer(TestConstants.SenderAccount, TestConstants.RecipientAccount.NxtAccountRs, TestConstants.Asset, amount, "TEST");
 
@@ -40,6 +41,29 @@ namespace NxtTipbot.Tests
                 It.IsAny<ulong>(), 
                 It.Is<long>(quantityQnt => quantityQnt == expectedQuantity),
                 It.IsAny<CreateTransactionParameters>()));
+        }
+
+        [Theory]
+        [InlineData(0, 100)]
+        [InlineData(1, 10)]
+        [InlineData(2, 1)]
+        [InlineData(3, 0.1)]
+        [InlineData(4, 0.01)]
+        public async void GetBalanceShouldTransferCorrectAmount(int decimals, decimal expected)
+        {
+            var asset = new NxtAsset(new Asset { AssetId = 234, Decimals = decimals }, "TEST");
+            assetExchangeServiceMock.Setup(s => s.GetAccountAssets(
+                It.Is<Account>(a => a.AccountRs == TestConstants.SenderAccount.NxtAccountRs),
+                It.Is<ulong>(id => id == asset.Id),
+                It.IsAny<bool?>(),
+                It.IsAny<int?>(),
+                It.IsAny<ulong?>(),
+                It.IsAny<ulong?>()))
+                    .ReturnsAsync(new AccountAssetsReply { AccountAssets = new List<AccountAsset> { new AccountAsset { UnconfirmedQuantityQnt = 100 } } });
+
+            var balance = await nxtConnector.GetBalance(asset, TestConstants.SenderAccount.NxtAccountRs);
+
+            Assert.Equal(expected, balance);
         }
     }
 }
