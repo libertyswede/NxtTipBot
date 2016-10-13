@@ -105,6 +105,7 @@ namespace NxtTipbot
                     case "file_shared":
                     case "file_public":
                     case "dnd_updated_user":
+                    case "pin_added":
                         break;
 
                     case "message": await HandleMessage(json);
