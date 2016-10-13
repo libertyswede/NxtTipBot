@@ -340,7 +340,7 @@ namespace NxtTipbot.Tests
         {
             const decimal balance = 4;
             SetupNxtAccount(TestConstants.SenderAccount, balance);
-            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42");
+            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> {amount}");
 
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
