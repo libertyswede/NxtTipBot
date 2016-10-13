@@ -155,7 +155,7 @@ namespace NxtTipbot
             {
                 if (nxtBalance >= amount && nxtBalance < amount + 1)
                 {
-                    await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFundsNeedFee(nxtBalance, transferable.Name));
+                    await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFundsNeedFee(nxtBalance));
                     return false;
                 }
                 if (nxtBalance < amount + 1)
@@ -168,7 +168,7 @@ namespace NxtTipbot
             {
                 if (nxtBalance < 1)
                 {
-                    await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFundsNeedFee(nxtBalance, Nxt.Singleton.Name));
+                    await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFundsNeedFee(nxtBalance));
                     return false;
                 }
 

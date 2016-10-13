@@ -166,7 +166,7 @@ namespace NxtTipbot.Tests
             await slackHandler.InstantMessageCommand($"withdraw {TestConstants.RecipientAccount.NxtAccountRs} {amount}", slackUser, imSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id,
-                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance, "NXT"))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance))), true));
         }
 
         [Theory]
@@ -244,7 +244,7 @@ namespace NxtTipbot.Tests
             await slackHandler.InstantMessageCommand($"withdraw {TestConstants.RecipientAccount.NxtAccountRs} 42 {transferable.Name}", slackUser, imSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance, "NXT"))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance))), true));
         }
 
         [Fact]
@@ -368,7 +368,7 @@ namespace NxtTipbot.Tests
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
-                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance, "NXT"))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance))), true));
         }
 
         [Fact]
@@ -493,7 +493,7 @@ namespace NxtTipbot.Tests
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance, "NXT"))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance))), true));
         }
         
         [Fact]

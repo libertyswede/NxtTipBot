@@ -50,9 +50,9 @@ namespace NxtTipbot
             return $"Not enough {unit}. You only have {balance} {unit}.";
         }
 
-        public static string NotEnoughFundsNeedFee(decimal balance, string unit)
+        public static string NotEnoughFundsNeedFee(decimal balance)
         {
-            return $"Not enough {unit}. You only have {balance} {unit}, and you need 1 for the transaction fee.";
+            return $"Not enough NXT. 1 NXT is needed for the transaction fee and you only have {balance} NXT.";
         }
 
         public static string Withdraw(decimal amount, string unit, ulong txId)
