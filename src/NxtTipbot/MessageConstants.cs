@@ -52,7 +52,7 @@ namespace NxtTipbot
 
         public static string NotEnoughFundsNeedFee(decimal balance, string unit)
         {
-            return $"Not enough {unit}. You only have {balance} {unit}, and you need 1 for transaction fee.";
+            return $"Not enough {unit}. You only have {balance} {unit}, and you need 1 for the transaction fee.";
         }
 
         public static string Withdraw(decimal amount, string unit, ulong txId)
