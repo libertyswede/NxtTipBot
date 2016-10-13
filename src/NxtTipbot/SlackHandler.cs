@@ -233,7 +233,7 @@ namespace NxtTipbot
         private async Task Tip(SlackUser slackUser, Match match, SlackChannelSession channelSession)
         {
             var recipientUserId = match.Groups[1].Value;
-            var amountToWithdraw = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+            var amountToTip = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? Nxt.Singleton.Name : match.Groups[3].Value;
             var comment = string.IsNullOrEmpty(match.Groups[4].Value) ? string.Empty : match.Groups[4].Value;
             var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
@@ -259,7 +259,7 @@ namespace NxtTipbot
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.CommentTooLongChannel);
                 return;
             }
-            if (!(await VerifyParameters(transferable, unit, account, channelSession.Id, amountToWithdraw)))
+            if (!(await VerifyParameters(transferable, unit, account, channelSession.Id, amountToTip)))
             {
                 return;
             }
@@ -275,15 +275,31 @@ namespace NxtTipbot
             try
             {
                 var recipientUserName = SlackConnector.GetUser(recipientUserId).Name;
-                var txMessage = MessageConstants.NxtTipTransactionMessage(slackUser.Name, recipientUserName,  comment);
-                var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToWithdraw, txMessage, recipientPublicKey);
-                var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToWithdraw, transferable.Name, txId, comment);
+                var txMessage = MessageConstants.NxtTipTransactionMessage(slackUser.Name, recipientUserName, comment);
+                var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToTip, txMessage, recipientPublicKey);
+                var reply = MessageConstants.TipSentChannel(slackUser.Id, recipientUserId, amountToTip, transferable.Name, txId, comment);
                 await SlackConnector.SendMessage(channelSession.Id, reply, false);
+                await SendAssetRecipientMessage(slackUser, recipientUserId, transferable, recipientAccount, amountToTip);
             }
             catch (NxtException e)
             {
                 logger.LogError(0, e, e.Message);
                 throw;
+            }
+        }
+
+        private async Task SendAssetRecipientMessage(SlackUser slackUser, string recipientUserId, NxtTransferable transferable, NxtAccount recipientAccount, decimal amount)
+        {
+            NxtAsset asset = null;
+            if (transferable.Type == NxtTransferableType.Asset && (asset = transferable as NxtAsset).HasRecipientMessage())
+            {
+                var assetBalance = await nxtConnector.GetBalance(asset, recipientAccount.NxtAccountRs);
+                if (assetBalance == 0)
+                {
+                    var imId = await SlackConnector.GetInstantMessageId(recipientUserId);
+                    var message = asset.RecipientMessage.Replace("{amount}", $"{amount}").Replace("{sender}", $"<@{slackUser.Id}>");
+                    await SlackConnector.SendMessage(imId, message);
+                }
             }
         }
 

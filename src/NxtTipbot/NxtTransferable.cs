@@ -37,9 +37,16 @@ namespace NxtTipbot
 
     public class NxtAsset : NxtTransferable
     {
+        public string RecipientMessage { get; }
         public override NxtTransferableType Type { get { return NxtTransferableType.Asset; } }
-        public NxtAsset (Asset asset, string name) : base(asset.AssetId, name, asset.Decimals)
+        public NxtAsset (Asset asset, string name, string recipientMessage) : base(asset.AssetId, name, asset.Decimals)
         {
+            RecipientMessage = recipientMessage;
+        }
+
+        public bool HasRecipientMessage()
+        {
+            return !string.IsNullOrEmpty(RecipientMessage);
         }
     }
 

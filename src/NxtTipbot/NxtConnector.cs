@@ -13,7 +13,7 @@ namespace NxtTipbot
     public interface INxtConnector
     {
         string MasterKey { set; }
-        Task<NxtAsset> GetAsset(ulong assetId, string name);
+        Task<NxtAsset> GetAsset(AssetConfig assetConfig);
         Task<NxtCurrency> GetCurrency(ulong currencyId);
         Task<decimal> GetBalance(NxtTransferable transferable, string addressRs);
         Task<ulong> Transfer(NxtAccount senderAccount, string addressRs, NxtTransferable transferable, decimal amount, string message, string recipientPublicKey = "");
@@ -70,10 +70,10 @@ namespace NxtTipbot
             account.NxtAccountRs = accountWithPublicKey.AccountRs;
         }
 
-        public async Task<NxtAsset> GetAsset(ulong assetId, string name)
+        public async Task<NxtAsset> GetAsset(AssetConfig assetConfig)
         {
-            var asset = await assetExchangeService.GetAsset(assetId);
-            return new NxtAsset(asset, name);
+            var asset = await assetExchangeService.GetAsset(assetConfig.Id);
+            return new NxtAsset(asset, assetConfig.Name, assetConfig.RecipientMessage);
         }
 
         public async Task<NxtCurrency> GetCurrency(ulong currencyId)

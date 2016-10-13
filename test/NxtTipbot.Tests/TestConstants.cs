@@ -33,6 +33,6 @@ namespace NxtTipbot.Tests
         {
             AssetId = 123,
             Decimals = 4
-        }, "TEST");
+        }, "TEST", "{sender} just sent you {amount} TEST!");
     }
 }

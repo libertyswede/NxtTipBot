@@ -51,7 +51,7 @@ namespace NxtTipbot.Tests
         [InlineData(4, 0.01)]
         public async void GetBalanceShouldTransferCorrectAmount(int decimals, decimal expected)
         {
-            var asset = new NxtAsset(new Asset { AssetId = 234, Decimals = decimals }, "TEST");
+            var asset = new NxtAsset(new Asset { AssetId = 234, Decimals = decimals }, "TEST", "");
             assetExchangeServiceMock.Setup(s => s.GetAccountAssets(
                 It.Is<Account>(a => a.AccountRs == TestConstants.SenderAccount.NxtAccountRs),
                 It.Is<ulong>(id => id == asset.Id),

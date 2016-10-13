@@ -75,7 +75,7 @@ namespace NxtTipbot
                 }
                 foreach (var assetConfig in assetConfigs)
                 {
-                    transferables.Add(await nxtConnector.GetAsset(assetConfig.Id, assetConfig.Name));
+                    transferables.Add(await nxtConnector.GetAsset(assetConfig));
                 }
             }).Wait();
             return transferables;
@@ -90,7 +90,8 @@ namespace NxtTipbot
                 {
                     var id = ulong.Parse(assetConfig.GetChildren().Single(a => a.Key == "id").Value);
                     var name = assetConfig.GetChildren().Single(a => a.Key == "name").Value;
-                    yield return new AssetConfig { Id = id, Name = name };
+                    var recipientMessage = assetConfig.GetChildren().SingleOrDefault(a => a.Key == "recipientMessage")?.Value;
+                    yield return new AssetConfig(id, name, recipientMessage);
                 }
             }
         }
