@@ -27,9 +27,12 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 # Todo
 * When sending currency/asset to a new account, send a DM to the sender asking if he wants to pass along some NXT as well, allowing him to specify number of NXT to send in a separate transaction.
 * Make bot react to @tipper as well as 'tipper' when using tip command.
+* When trying to tip same amount of NXT as you currently have, use custom error message indicating you need 1 NXT for fee.
+* When trying to tip and sender has 0 NXT, use a more humoristic error message, like 'you're all out mate'.
 * Support having tip command as a part of a multi line chat message.
 * Multiple recipients like: _tipper tip @user1, @user2, @user3 20 NXT_
 * Stats command with support for total number of tips sent and total amount sent.
+* List available assets / MS Currencies in a separate 'list units' or 'list transferables' DM command.
 * Add support for more units (USD, EUR, beer, etc.).
 * Add support for icons as units, ie. a beer icon instead of the text 'beer'.
 * Add file logging (NLog).
