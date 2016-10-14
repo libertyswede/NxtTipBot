@@ -19,6 +19,7 @@ namespace NxtTipbot
         Task<ulong> Transfer(NxtAccount senderAccount, string addressRs, NxtTransferable transferable, decimal amount, string message, string recipientPublicKey = "");
         string GenerateMasterKey();
         void SetNxtProperties(NxtAccount account);
+        bool IsValidAddressRs(string addressRs);
     }
 
     public class NxtConnector : INxtConnector
@@ -154,6 +155,19 @@ namespace NxtTipbot
         {
             var transferCurrencyReply = await monetarySystemService.TransferCurrency(addressRs, currencyId, units, parameters);
             return transferCurrencyReply.TransactionId.Value;
+        }
+
+        public bool IsValidAddressRs(string addressRs)
+        {
+            try
+            {
+                var account = new Account(addressRs);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
         }
     }
 }

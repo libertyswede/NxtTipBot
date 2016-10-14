@@ -65,5 +65,27 @@ namespace NxtTipbot.Tests
 
             Assert.Equal(expected, balance);
         }
+
+        [Theory]
+        [InlineData("NXT-7A48-47JL-T7LD-D5FS3")]
+        [InlineData("NXT-5MYN-AP7M-NKMH-CRQJZ")]
+        [InlineData("NXT-G885-AKDX-5G2B-BLUCG")]
+        public void IsValidAddressRsShouldSucceed(string addressRs)
+        {
+            var isValid = nxtConnector.IsValidAddressRs(addressRs);
+
+            Assert.True(isValid);
+        }
+
+        [Theory]
+        [InlineData("NXT-7A48-47JL-T3LD-D5FS3")]
+        [InlineData("NXT-5MYN-AP7M-NMMH-CRQJZ")]
+        [InlineData("NXT-G885-AKDX-582B-BLUCG")]
+        public void IsValidAddressRsShouldFail(string addressRs)
+        {
+            var isValid = nxtConnector.IsValidAddressRs(addressRs);
+
+            Assert.False(isValid);
+        }
     }
 }
