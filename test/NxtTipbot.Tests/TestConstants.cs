@@ -34,5 +34,9 @@ namespace NxtTipbot.Tests
             AssetId = 123,
             Decimals = 4
         }, "TEST", "{sender} just sent you {amount} TEST!");
+
+        public static readonly string ValidAddressRs1 = "NXT-G885-AKDX-5G2B-BLUCG";
+        public static readonly string InvalidAddressRs1 = "NXT-G885-AKDX-582B-BLUCG";
+        
     }
 }

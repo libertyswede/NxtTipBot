@@ -268,7 +268,8 @@ namespace NxtTipbot
             }
             if (!isRecipientSlackUser && !nxtConnector.IsValidAddressRs(recipient))
             {
-
+                await SlackConnector.SendMessage(channelSession.Id, MessageConstants.InvalidAddress);
+                return;
             }
             if (account == null)
             {
@@ -284,7 +285,6 @@ namespace NxtTipbot
             {
                 return;
             }
-
 
             if (isRecipientSlackUser)
             {
@@ -304,6 +304,21 @@ namespace NxtTipbot
                     var reply = MessageConstants.TipSentChannel(slackUser.Id, recipient, amountToTip, transferable.Name, txId, comment);
                     await SlackConnector.SendMessage(channelSession.Id, reply, false);
                     await SendAssetRecipientMessage(slackUser, recipient, transferable, recipientAccount, amountToTip);
+                }
+                catch (NxtException e)
+                {
+                    logger.LogError(0, e, e.Message);
+                    throw;
+                }
+            }
+            else
+            {
+                try
+                {
+                    var txMessage = MessageConstants.NxtTipTransactionMessage(slackUser.Name, "", comment);
+                    var txId = await nxtConnector.Transfer(account, recipient, transferable, amountToTip, txMessage, "");
+                    var reply = MessageConstants.TipToAddressRsSentChannel(slackUser.Id, recipient, amountToTip, transferable.Name, txId, comment);
+                    await SlackConnector.SendMessage(channelSession.Id, reply, false);
                 }
                 catch (NxtException e)
                 {

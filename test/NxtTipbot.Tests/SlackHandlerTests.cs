@@ -26,6 +26,8 @@ namespace NxtTipbot.Tests
             slackConnectorMock.Setup(c => c.GetUser(It.Is<string>(recipient => string.Equals(recipient, TestConstants.RecipientAccount.SlackId)))).Returns(recipientUser);
             slackHandler = new SlackHandler(nxtConnectorMock.Object, walletRepositoryMock.Object, loggerMock.Object);
             slackHandler.SlackConnector = slackConnectorMock.Object;
+            nxtConnectorMock.Setup(c => c.IsValidAddressRs(It.Is<string>(a => a == TestConstants.ValidAddressRs1))).Returns(true);
+            nxtConnectorMock.Setup(c => c.IsValidAddressRs(It.Is<string>(a => a == TestConstants.InvalidAddressRs1))).Returns(false);
         }
 
         [Theory]
@@ -384,21 +386,49 @@ namespace NxtTipbot.Tests
                 It.Is<string>(input => input.Equals(MessageConstants.CommentTooLongChannel)), true));
         }
 
+        [Fact]
+        public async void TipNxtToAddressShouldFailWithInvalidAddress()
+        {
+            var message = CreateChannelMessage($"tipper tip {TestConstants.InvalidAddressRs1} 42 NXT");
+            SetupNxtAccount(TestConstants.SenderAccount, 500);
+
+            await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.InvalidAddress)), true));
+        }
+
+        [Fact]
+        public async void TipNxtToAddressShouldSucceed()
+        {
+            const decimal tipAmount = 42;
+            var message = CreateChannelMessage($"tipper tip {TestConstants.ValidAddressRs1} 42 NXT");
+            await SendSuccessfulTip(message, tipAmount);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.TipToAddressRsSentChannel(slackUser.Id, TestConstants.ValidAddressRs1, tipAmount, "NXT", txId, ""))), false));
+        }
+
         [Theory]
         [InlineData("")]
         [InlineData(" NXT")]
         public async void TipNxtShouldSucceed(string unit)
         {
+            const decimal tipAmount = 42;
             var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42{unit}");
-            await TipNxtShouldSucceed(message);
+            await SendSuccessfulTip(message, tipAmount);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(slackUser.Id, TestConstants.RecipientAccount.SlackId, tipAmount, "NXT", txId, ""))), false));
         }
 
         [Fact]
         public async void TipNxtShouldSucceedWithComment()
         {
+            const decimal tipAmount = 42;
             const string comment = "here ya go! :)";
             var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42 NXT {comment}");
-            await TipNxtShouldSucceed(message, comment);
+            await SendSuccessfulTip(message, tipAmount, "");
 
             nxtConnectorMock.Verify(c => c.Transfer(
                 It.IsAny<NxtAccount>(),
@@ -412,10 +442,11 @@ namespace NxtTipbot.Tests
         [Fact]
         public async void TipNxtShouldSucceedWithRecipientAndSenderInTransactionMessage()
         {
+            const decimal tipAmount = 42;
             var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42 NXT");
             var transactionMessage = MessageConstants.NxtTipTransactionMessage(slackUser.Name, recipientUser.Name, "");
 
-            await TipNxtShouldSucceed(message, "");
+            await SendSuccessfulTip(message, tipAmount, "");
 
             nxtConnectorMock.Verify(c => c.Transfer(
                 It.IsAny<NxtAccount>(),
@@ -432,20 +463,23 @@ namespace NxtTipbot.Tests
         [InlineData(5)]
         public async void TipNxtShouldSucceedWithMultipleWhiteSpaces(int whiteSpaceCount)
         {
+            const decimal tipAmount = 42;
             var spaces = new string(' ', whiteSpaceCount);
             var message = CreateChannelMessage($"tipper{spaces}tip{spaces}<@{TestConstants.RecipientAccount.SlackId}>{spaces}42");
-            await TipNxtShouldSucceed(message);
+            await SendSuccessfulTip(message, tipAmount);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(slackUser.Id, TestConstants.RecipientAccount.SlackId, tipAmount, "NXT", txId, ""))), false));
         }
 
-        private async Task TipNxtShouldSucceed(SlackMessage message, string comment = "")
+        private async Task SendSuccessfulTip(SlackMessage message, decimal tipAmount, string comment = "")
         {
             const decimal balance = 400;
-            const decimal tipAmount = 42;
             SetupNxtAccount(TestConstants.SenderAccount, balance);
             SetupNxtAccount(TestConstants.RecipientAccount, 0);
             nxtConnectorMock.Setup(c => c.Transfer(
                 It.Is<NxtAccount>(a => a == TestConstants.SenderAccount),
-                It.Is<string>(r => r == TestConstants.RecipientAccount.NxtAccountRs),
+                It.Is<string>(r => r == TestConstants.RecipientAccount.NxtAccountRs || r == TestConstants.ValidAddressRs1),
                 It.Is<NxtTransferable>(t => t == Nxt.Singleton),
                 It.Is<decimal>(amount => amount == tipAmount),
                 It.IsAny<string>(),
@@ -453,9 +487,6 @@ namespace NxtTipbot.Tests
                     .ReturnsAsync(txId);
 
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
-
-            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
-                It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(slackUser.Id, TestConstants.RecipientAccount.SlackId, tipAmount, "NXT", txId, comment))), false));
         }
 
         [Fact]

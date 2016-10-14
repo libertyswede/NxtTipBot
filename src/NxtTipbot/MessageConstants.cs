@@ -72,6 +72,11 @@ namespace NxtTipbot
                     "Type *help* to get more information about what commands are available.";
         }
 
+        public static string TipToAddressRsSentChannel(string senderSlackId, string addressRs, decimal amount, string unit, ulong txId, string message)
+        {
+            return $"<@{senderSlackId}> => {addressRs} {amount} {unit} {message} (https://nxtportal.org/transactions/{txId})";
+        }
+
         public static string TipSentChannel(string senderSlackId, string recipientSlackId, decimal amount, string unit, ulong txId, string message)
         {
             return $"<@{senderSlackId}> => <@{recipientSlackId}> {amount} {unit} {message} (https://nxtportal.org/transactions/{txId})";
@@ -79,7 +84,11 @@ namespace NxtTipbot
 
         public static string NxtTipTransactionMessage(string sender, string recipient, string comment)
         {
-            var message = $"tip from slack tipper - from {sender} to {recipient}";
+            var message = $"tip from slack tipper - from {sender}";
+            if (!string.IsNullOrEmpty(recipient))
+            {
+                message += $" to {recipient}";
+            }
             if (!string.IsNullOrEmpty(comment))
             {
                 message += $" - {comment}";
