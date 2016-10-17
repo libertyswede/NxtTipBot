@@ -102,6 +102,7 @@ namespace NxtTipbot
                     case "user_typing":
                     case "hello":
                     case "reaction_added":
+                    case "reaction_removed":
                     case "file_shared":
                     case "file_public":
                     case "dnd_updated_user":

@@ -128,20 +128,16 @@ namespace NxtTipbot
 
             switch (transferable.Type)
             {
-                case NxtTransferableType.Nxt: return await SendMoney(senderAccount, addressRs, quantity, message, recipientPublicKey);
+                case NxtTransferableType.Nxt: return await SendMoney(parameters, addressRs, quantity);
                 case NxtTransferableType.Asset: return await TransferAsset(addressRs, transferable.Id, quantity, parameters);
                 case NxtTransferableType.Currency: return await TransferCurrency(addressRs, transferable.Id, quantity, parameters);
                 default: throw new ArgumentException($"Unsupported NxtTransferableType: {transferable.Type}", nameof(transferable));
             }
         }
 
-        private async Task<ulong> SendMoney(NxtAccount senderAccount, string addressRs, long amountNqt, string message, string recipientPublicKey = "")
+        private async Task<ulong> SendMoney(CreateTransactionParameters parameters, string addressRs, long amountNqt)
         {
-            var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, senderAccount.SecretPhrase);
-            parameters.RecipientPublicKey = recipientPublicKey;
-            parameters.Message = new CreateTransactionParameters.UnencryptedMessage(message, true);
             var sendMoneyReply = await accountService.SendMoney(parameters, addressRs, Amount.CreateAmountFromNqt(amountNqt));
-
             return sendMoneyReply.TransactionId.Value;
         }
 
