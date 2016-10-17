@@ -65,7 +65,7 @@ namespace NxtTipbot
         private async Task Recieve()
         {
             WebSocketReceiveResult result;
-            var buffer = new byte[1024];
+            var buffer = new byte[65536];
 
             while (webSocket.State == WebSocketState.Open)
             {
