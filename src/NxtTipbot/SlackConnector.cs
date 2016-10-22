@@ -42,24 +42,36 @@ namespace NxtTipbot
 
         public async Task Run()
         {
-            string websocketUri = string.Empty;
-            using (var httpClient = new HttpClient())
-            using (var response = await httpClient.GetAsync($"https://slack.com/api/rtm.start?token={apiToken}"))
-            using (var content = response.Content)
+            var lastConnectTry = DateTime.MinValue;
+            while (DateTime.Compare(lastConnectTry.AddMinutes(1), DateTime.UtcNow) < 0)
             {
-                var json = await content.ReadAsStringAsync();
-                logger.LogTrace($"Initial handshake reply with rtm.start: {json}");
-                var jObject = JObject.Parse(json);
-                websocketUri = (string)jObject["url"];
-                SelfId = (string)jObject["self"]["id"];
-                channelSessions = JsonConvert.DeserializeObject<List<SlackChannelSession>>(jObject["channels"].ToString());
-                slackUsers = JsonConvert.DeserializeObject<List<SlackUser>>(jObject["users"].ToString());
-                imSessions = JsonConvert.DeserializeObject<List<SlackIMSession>>(jObject["ims"].ToString());
-            }
+                try
+                {
+                    string websocketUri = string.Empty;
+                    using (var httpClient = new HttpClient())
+                    using (var response = await httpClient.GetAsync($"https://slack.com/api/rtm.start?token={apiToken}"))
+                    using (var content = response.Content)
+                    {
+                        var json = await content.ReadAsStringAsync();
+                        logger.LogTrace($"Initial handshake reply with rtm.start: {json}");
+                        var jObject = JObject.Parse(json);
+                        websocketUri = (string)jObject["url"];
+                        SelfId = (string)jObject["self"]["id"];
+                        channelSessions = JsonConvert.DeserializeObject<List<SlackChannelSession>>(jObject["channels"].ToString());
+                        slackUsers = JsonConvert.DeserializeObject<List<SlackUser>>(jObject["users"].ToString());
+                        imSessions = JsonConvert.DeserializeObject<List<SlackIMSession>>(jObject["ims"].ToString());
+                    }
 
-            webSocket = new ClientWebSocket();            
-            await webSocket.ConnectAsync(new Uri(websocketUri), CancellationToken.None);
-            await Recieve();
+                    webSocket = new ClientWebSocket();
+                    lastConnectTry = DateTime.UtcNow;
+                    await webSocket.ConnectAsync(new Uri(websocketUri), CancellationToken.None);
+                    await Recieve();
+                }
+                catch (Exception e)
+                {
+                    logger.LogCritical($"Unhandled exception: {e.ToString()}\n{e.Message}\n{e.StackTrace}\nAttempting to reconnect..");
+                }
+            }
         }
 
         private async Task Recieve()
