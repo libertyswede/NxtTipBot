@@ -6,6 +6,7 @@ namespace NxtTipbot
 
     public abstract class NxtTransferable
     {
+        public string RecipientMessage { get; protected set; }
         public ulong Id { get; }
         public string Name { get; }
         public int Decimals { get; }
@@ -17,6 +18,8 @@ namespace NxtTipbot
             Name = name;
             Decimals = decimals;
         }
+
+        public abstract bool HasRecipientMessage();
     }
 
     public enum NxtTransferableType
@@ -33,18 +36,22 @@ namespace NxtTipbot
         private Nxt() : base(0, "NXT", 8)
         {
         }
+
+        public override bool HasRecipientMessage()
+        {
+            return false;
+        }
     }
 
     public class NxtAsset : NxtTransferable
     {
-        public string RecipientMessage { get; }
         public override NxtTransferableType Type { get { return NxtTransferableType.Asset; } }
         public NxtAsset (Asset asset, string name, string recipientMessage) : base(asset.AssetId, name, asset.Decimals)
         {
             RecipientMessage = recipientMessage;
         }
 
-        public bool HasRecipientMessage()
+        public override bool HasRecipientMessage()
         {
             return !string.IsNullOrEmpty(RecipientMessage);
         }
@@ -53,8 +60,14 @@ namespace NxtTipbot
     public class NxtCurrency : NxtTransferable
     {
         public override NxtTransferableType Type { get { return NxtTransferableType.Currency; } }
-        public NxtCurrency (Currency currency) : base(currency.CurrencyId, currency.Code, currency.Decimals)
+        public NxtCurrency (Currency currency, string recipientMessage) : base(currency.CurrencyId, currency.Code, currency.Decimals)
         {
+            RecipientMessage = recipientMessage;
+        }
+
+        public override bool HasRecipientMessage()
+        {
+            return !string.IsNullOrEmpty(RecipientMessage);
         }
     }
 }

@@ -13,8 +13,8 @@ namespace NxtTipbot
     public interface INxtConnector
     {
         string MasterKey { set; }
-        Task<NxtAsset> GetAsset(AssetConfig assetConfig);
-        Task<NxtCurrency> GetCurrency(ulong currencyId);
+        Task<NxtAsset> GetAsset(TransferableConfig assetConfig);
+        Task<NxtCurrency> GetCurrency(TransferableConfig currencyConfig);
         Task<decimal> GetBalance(NxtTransferable transferable, string addressRs);
         Task<ulong> Transfer(NxtAccount senderAccount, string addressRs, NxtTransferable transferable, decimal amount, string message, string recipientPublicKey = "");
         string GenerateMasterKey();
@@ -71,16 +71,16 @@ namespace NxtTipbot
             account.NxtAccountRs = accountWithPublicKey.AccountRs;
         }
 
-        public async Task<NxtAsset> GetAsset(AssetConfig assetConfig)
+        public async Task<NxtAsset> GetAsset(TransferableConfig assetConfig)
         {
             var asset = await assetExchangeService.GetAsset(assetConfig.Id);
             return new NxtAsset(asset, assetConfig.Name, assetConfig.RecipientMessage);
         }
 
-        public async Task<NxtCurrency> GetCurrency(ulong currencyId)
+        public async Task<NxtCurrency> GetCurrency(TransferableConfig currencyConfig)
         {
-            var currencyReply = await monetarySystemService.GetCurrency(CurrencyLocator.ByCurrencyId(currencyId));
-            return new NxtCurrency(currencyReply);
+            var currencyReply = await monetarySystemService.GetCurrency(CurrencyLocator.ByCurrencyId(currencyConfig.Id));
+            return new NxtCurrency(currencyReply, currencyConfig.RecipientMessage);
         }
         
         public async Task<decimal> GetBalance(NxtTransferable transferable, string addressRs)

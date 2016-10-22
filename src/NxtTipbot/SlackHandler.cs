@@ -303,7 +303,7 @@ namespace NxtTipbot
                     var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToTip, txMessage, recipientPublicKey);
                     var reply = MessageConstants.TipSentChannel(slackUser.Id, recipient, amountToTip, transferable.Name, txId, comment);
                     await SlackConnector.SendMessage(channelSession.Id, reply, false);
-                    await SendAssetRecipientMessage(slackUser, recipient, transferable, recipientAccount, amountToTip);
+                    await SendTransferableRecipientMessage(slackUser, recipient, transferable, recipientAccount, amountToTip);
                 }
                 catch (NxtException e)
                 {
@@ -328,16 +328,15 @@ namespace NxtTipbot
             }
         }
 
-        private async Task SendAssetRecipientMessage(SlackUser slackUser, string recipientUserId, NxtTransferable transferable, NxtAccount recipientAccount, decimal amount)
+        private async Task SendTransferableRecipientMessage(SlackUser slackUser, string recipientUserId, NxtTransferable transferable, NxtAccount recipientAccount, decimal amount)
         {
-            NxtAsset asset = null;
-            if (transferable.Type == NxtTransferableType.Asset && (asset = transferable as NxtAsset).HasRecipientMessage())
+            if (transferable.HasRecipientMessage())
             {
-                var assetBalance = await nxtConnector.GetBalance(asset, recipientAccount.NxtAccountRs);
-                if (assetBalance == 0)
+                var balance = await nxtConnector.GetBalance(transferable, recipientAccount.NxtAccountRs);
+                if (balance == 0)
                 {
                     var imId = await SlackConnector.GetInstantMessageId(recipientUserId);
-                    var message = asset.RecipientMessage.Replace("{amount}", $"{amount}").Replace("{sender}", $"<@{slackUser.Id}>");
+                    var message = transferable.RecipientMessage.Replace("{amount}", $"{amount}").Replace("{sender}", $"<@{slackUser.Id}>");
                     await SlackConnector.SendMessage(imId, message);
                 }
             }

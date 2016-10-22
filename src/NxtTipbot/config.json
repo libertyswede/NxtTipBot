@@ -5,17 +5,23 @@
   "masterKey": "",
   "logging": {
     "logLevel": "Information"
-  }
+  } //,
 
-  // Samples of how to add an MS Currency or Asset to the tip bot
+  //Samples of how to add an MS Currency or Asset to the tip bot
 
-  // ,"currencies": [
-  //     "18154834130337484019" // NAUT MS currency
-  // ]
-  // ,"assets": [
-  //     {
-  //         "id": "12659653638116877017",
-  //         "name": "superBTC"
-  //     }
-  // ]
+  //"currencies": [
+  //  {
+  //    "id": "18154834130337484019",
+  //    "name": "NAUT",
+  //    "recipientMessage": "Hey, you just recieved {amount} NAUT from {sender}!"
+  //  }
+  //],
+
+  //"assets": [
+  //  {
+  //    "id": "12659653638116877017",
+  //    "name": "superBTC",
+  //    "recipientMessage": "Hey, you just recieved {amount} SuperBTC from {sender}!"
+  //  }
+  //]
 }

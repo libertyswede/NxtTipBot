@@ -23,14 +23,14 @@ namespace NxtTipbot
             var walletFile = configSettings.Single(c => c.Key == "walletFile").Value;
             var nxtServerAddress = configSettings.Single(c => c.Key == "nxtServerAddress").Value;
             var masterKey = configSettings.Single(c => c.Key == "masterKey").Value;
-            var currencyIds = GetCurrenciesConfiguration(configSettings);
-            var assetConfigs = GetAssetsConfiguration(configSettings);
+            var currencyConfigs = GetTransferableConfiguration(configSettings, "currencies");
+            var assetConfigs = GetTransferableConfiguration(configSettings, "assets");
 
             var logger = SetupLogging(logLevel);
             logger.LogInformation($"logLevel: {logLevel}");
             logger.LogInformation($"nxtServerAddress: {nxtServerAddress}");
             logger.LogInformation($"walletFile: {walletFile}");
-            currencyIds.ToList().ForEach(c => logger.LogInformation($"currency id: {c}"));
+            currencyConfigs.ToList().ForEach(c => logger.LogInformation($"currency id: {c.Id} ({c.Name})"));
             assetConfigs.ToList().ForEach(a => logger.LogInformation($"asset id: {a.Id} ({a.Name})"));
 
             InitDatabase(walletFile);
@@ -42,7 +42,7 @@ namespace NxtTipbot
             CheckMasterKey(logger, masterKey, nxtConnector);
             nxtConnector.MasterKey = masterKey;
             slackHandler.SlackConnector = slackConnector;
-            var transferables = GetTransferables(currencyIds, assetConfigs, nxtConnector);
+            var transferables = GetTransferables(currencyConfigs, assetConfigs, nxtConnector);
             transferables.ForEach(t => slackHandler.AddTransferable(t));
 
             var slackTask = Task.Run(() => slackConnector.Run());
@@ -64,14 +64,14 @@ namespace NxtTipbot
             Environment.Exit(-1);
         }
 
-        private static List<NxtTransferable> GetTransferables(IEnumerable<ulong> currencyIds, IEnumerable<AssetConfig> assetConfigs, INxtConnector nxtConnector)
+        private static List<NxtTransferable> GetTransferables(IEnumerable<TransferableConfig> currencyConfigs, IEnumerable<TransferableConfig> assetConfigs, INxtConnector nxtConnector)
         {
             var transferables = new List<NxtTransferable>();
             Task.Run(async () =>
             {
-                foreach (var currencyId in currencyIds)
+                foreach (var currencyConfig in currencyConfigs)
                 {
-                    transferables.Add(await nxtConnector.GetCurrency(currencyId));
+                    transferables.Add(await nxtConnector.GetCurrency(currencyConfig));
                 }
                 foreach (var assetConfig in assetConfigs)
                 {
@@ -81,9 +81,9 @@ namespace NxtTipbot
             return transferables;
         }
 
-        private static IEnumerable<AssetConfig> GetAssetsConfiguration(IEnumerable<IConfigurationSection> configSettings)
+        private static IEnumerable<TransferableConfig> GetTransferableConfiguration(IEnumerable<IConfigurationSection> configSettings, string section)
         {
-            var assetsSection = configSettings.SingleOrDefault(c => c.Key == "assets")?.GetChildren();
+            var assetsSection = configSettings.SingleOrDefault(c => c.Key == section)?.GetChildren();
             if (assetsSection != null)
             {
                 foreach (var assetConfig in assetsSection)
@@ -91,17 +91,9 @@ namespace NxtTipbot
                     var id = ulong.Parse(assetConfig.GetChildren().Single(a => a.Key == "id").Value);
                     var name = assetConfig.GetChildren().Single(a => a.Key == "name").Value;
                     var recipientMessage = assetConfig.GetChildren().SingleOrDefault(a => a.Key == "recipientMessage")?.Value;
-                    yield return new AssetConfig(id, name, recipientMessage);
+                    yield return new TransferableConfig(id, name, recipientMessage);
                 }
             }
-        }
-
-        private static IEnumerable<ulong> GetCurrenciesConfiguration(IEnumerable<IConfigurationSection> configSettings)
-        {
-            var currencyConfigs = configSettings.SingleOrDefault(c => c.Key == "currencies")?.GetChildren() 
-                ?? new List<IConfigurationSection>().AsEnumerable();
-            var currencyIds = currencyConfigs.Select(c => ulong.Parse(c.Value));
-            return currencyIds;
         }
 
         private static void InitDatabase(string walletFile)

@@ -27,7 +27,7 @@ namespace NxtTipbot.Tests
             CurrencyId = 123,
             Code = "TEST",
             Decimals = 4
-        });
+        }, "{sender} just sent you {amount} TEST!");
 
         public static readonly NxtAsset Asset = new NxtAsset(new Asset
         {
