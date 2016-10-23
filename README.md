@@ -26,14 +26,17 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 
 # Todo
 * When sending currency/asset to a new account, send a DM to the sender asking if he wants to pass along some NXT as well, allowing him to specify number of NXT to send in a separate transaction.
+* Implement deposit/withdraw for MGW asset(s). Need to verify this with VB.
+* Case insentitive alias function for assets and currencies, eg. BTC --> SuperBTC, Ardor --> ARDR, etc.
+* Ability to withdraw assets and currencies that are NOT in the config.
 * Make bot react to @tipper as well as 'tipper' when using tip command.
 * Blockchain backup for account id --> id on master key.
+* List available assets / MS Currencies in a separate 'list units' or 'list transferables' DM command.
 * Be able to send to NXT aliases as well as @username and NXT addresses.
 * When trying to tip and sender has 0 NXT, use a more humoristic error message, like 'you're all out mate'.
 * Support having tip command as a part of a multi line chat message.
 * Multiple recipients like: _tipper tip @user1, @user2, @user3 20 NXT_
 * Stats command with support for total number of tips sent and total amount sent.
-* List available assets / MS Currencies in a separate 'list units' or 'list transferables' DM command.
 * Add support for more units (USD, EUR, beer, etc.).
 * Add support for icons as units, ie. a beer icon instead of the text 'beer'.
 * Add file logging (NLog).
