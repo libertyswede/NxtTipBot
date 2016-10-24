@@ -157,6 +157,7 @@ namespace NxtTipbot
                 }
                 else if (instantMessage != null)
                 {
+                    logger.LogTrace($"Recieved IM from: {slackUser.Name} ({slackUser.Id}), message: {message.Text}");
                     await slackHandler.InstantMessageCommand(message.Text, slackUser, instantMessage);
                 }
             }
@@ -212,13 +213,13 @@ namespace NxtTipbot
         {
             var debugTarget = channelSessions.SingleOrDefault(s => s.Id == channelId)?.Name ?? 
                 slackUsers.Single(u => u.Id == imSessions.Single(s => s.Id == channelId).UserId).Name;
-            logger.LogTrace($"Sending chat.postMessage to channel id: {channelId} ({debugTarget}), message: {message}, unfurl_links: {unfurl_links}");
+            logger.LogTrace($"Sending chat.postMessage to: {debugTarget} ({channelId}), message: {message}");
             using (var httpClient = new HttpClient())
             using (var response = await httpClient.GetAsync($"https://slack.com/api/chat.postMessage?token={apiToken}&channel={channelId}&text={message}&unfurl_links={unfurl_links}&as_user=true"))
             using (var content = response.Content)
             {
                 var json = await content.ReadAsStringAsync();
-                logger.LogTrace($"Reply from request to chat.postMessage: {json}");
+                //logger.LogTrace($"Reply from request to chat.postMessage: {json}");
             }
         }
 
