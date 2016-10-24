@@ -232,7 +232,8 @@ namespace NxtTipbot
             var id = imSessions.SingleOrDefault(im => im.UserId == userId)?.Id;
             if (id == null)
             {
-                logger.LogTrace($"Requesting im.open with user {userId}");
+                var userName = slackUsers.Single(u => u.Id == userId).Name;
+                logger.LogTrace($"Requesting im.open with user {userName} ({userId})");
                 using (var httpClient = new HttpClient())
                 using (var response = await httpClient.GetAsync($"https://slack.com/api/im.open?token={apiToken}&user={userId}&as_user=true"))
                 using (var content = response.Content)
