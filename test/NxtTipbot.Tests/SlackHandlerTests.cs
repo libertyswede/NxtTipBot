@@ -592,6 +592,29 @@ namespace NxtTipbot.Tests
         }
 
         [Fact]
+        public async void TipCurrencyShouldSendMessageToSenderWhenRecipientHasZeroNxt()
+        {
+            await TipTransferrableShouldSendMessageToSenderWhenRecipientHasZeroNxt(TestConstants.Currency);
+        }
+
+        [Fact]
+        public async void TipAssetShouldSendMessageToSenderWhenRecipientHasZeroNxt()
+        {
+            await TipTransferrableShouldSendMessageToSenderWhenRecipientHasZeroNxt(TestConstants.Asset);
+        }
+
+        private async Task TipTransferrableShouldSendMessageToSenderWhenRecipientHasZeroNxt(NxtTransferable transferable)
+        {
+            const decimal tipAmount = 42;
+            var expectedMessage = MessageConstants.RecipientDoesNotHaveAnyNxtHint(TestConstants.RecipientAccount.SlackId, transferable.Name);
+            slackConnectorMock.Setup(c => c.GetInstantMessageId(It.Is<string>(id => id == TestConstants.SenderAccount.SlackId))).ReturnsAsync(imSession.Id);
+
+            await SetupSuccessfulTipTransferable(transferable, tipAmount);
+
+            slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, expectedMessage, true));
+        }
+
+        [Fact]
         public async void TipAssetShouldSendMessageToRecipient()
         {
             await TipTransferableShouldSendMessageToRecipient(TestConstants.Asset);

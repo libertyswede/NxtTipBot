@@ -1,3 +1,5 @@
+using System;
+
 namespace NxtTipbot
 {
     public static class MessageConstants
@@ -93,6 +95,13 @@ namespace NxtTipbot
             {
                 message += $" - {comment}";
             }
+            return message;
+        }
+
+        public static string RecipientDoesNotHaveAnyNxtHint(string recipientSlackId, string unit)
+        {
+            var message = $"<@{recipientSlackId}> has less than 1 NXT and will not be able to use the {unit} you sent.\n";
+            message += $"Maybe you should consider tipping some NXT to conver the transaction fee?";
             return message;
         }
     }

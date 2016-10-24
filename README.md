@@ -25,7 +25,6 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 2. In the test/NxtTipbot.Tests directory, type 'dotnet restore' and the 'dotnet test'
 
 # Todo
-* When sending currency/asset to a new account, send a DM to the sender asking if he wants to pass along some NXT as well, allowing him to specify number of NXT to send in a separate transaction.
 * Implement deposit/withdraw for MGW asset(s). Need to verify this with VB.
 * Case insentitive alias function for assets and currencies, eg. BTC --> SuperBTC, Ardor --> ARDR, etc.
 * Ability to withdraw assets and currencies that are NOT in the config.

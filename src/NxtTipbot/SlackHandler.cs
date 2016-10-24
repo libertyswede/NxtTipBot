@@ -304,6 +304,7 @@ namespace NxtTipbot
                     var reply = MessageConstants.TipSentChannel(slackUser.Id, recipient, amountToTip, transferable.Name, txId, comment);
                     await SlackConnector.SendMessage(channelSession.Id, reply, false);
                     await SendTransferableRecipientMessage(slackUser, recipient, transferable, recipientAccount, amountToTip);
+                    await SendTransferableSenderMessage(slackUser, recipient, transferable, recipientAccount);
                 }
                 catch (NxtException e)
                 {
@@ -324,6 +325,20 @@ namespace NxtTipbot
                 {
                     logger.LogError(0, e, e.Message);
                     throw;
+                }
+            }
+        }
+
+        private async Task SendTransferableSenderMessage(SlackUser slackUser, string recipient, NxtTransferable transferable, NxtAccount recipientAccount)
+        {
+            if (transferable != Nxt.Singleton)
+            {
+                var balance = await nxtConnector.GetBalance(Nxt.Singleton, recipientAccount.NxtAccountRs);
+                if (balance < 1)
+                {
+                    var imId = await SlackConnector.GetInstantMessageId(slackUser.Id);
+                    var message = MessageConstants.RecipientDoesNotHaveAnyNxtHint(recipientAccount.SlackId, transferable.Name);
+                    await SlackConnector.SendMessage(imId, message);
                 }
             }
         }
