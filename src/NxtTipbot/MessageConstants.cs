@@ -4,12 +4,6 @@ namespace NxtTipbot
 {
     public static class MessageConstants
     {
-        public const string HelpText = "*Direct Message Commands*\n"
-            + "_balance_ - Wallet balance\n"
-            + "_deposit_ - shows your deposit address (or creates one if you don't have one already)\n"
-            + "_withdraw [nxt address] amount [unit]_ - withdraws amount to specified NXT address\n\n"
-            + "*Channel Commands*\n"
-            + "_tipper tip [@user or NXT address] amount [unit] [comment]_ - sends a tip to specified user";
         
         public const string UnknownCommandReply = "huh? try typing *help* for a list of available commands.";
         
@@ -26,6 +20,16 @@ namespace NxtTipbot
         public const string InvalidAddress = "Not a valid NXT address";
 
         public const string CommentTooLongChannel = "Are you writing an article? Try shortening your comment.";
+
+        public static string GetHelpText(string botName)
+        {
+            return "*Direct Message Commands*\n"
+                    + "_balance_ - Wallet balance\n"
+                    + "_deposit_ - shows your deposit address (or creates one if you don't have one already)\n"
+                    + "_withdraw [nxt address] amount [unit]_ - withdraws amount to specified NXT address\n\n"
+                    + "*Channel Commands*\n"
+                    + $"_{botName} tip [@user or NXT address] amount [unit] [comment]_ - sends a tip to specified user";
+        }
 
         public static string CurrentBalance(decimal balance, NxtTransferable transferable)
         {

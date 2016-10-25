@@ -95,7 +95,7 @@ namespace NxtTipbot
 
         private async Task Help(SlackIMSession imSession)
         {
-            await SlackConnector.SendMessage(imSession.Id, MessageConstants.HelpText);
+            await SlackConnector.SendMessage(imSession.Id, MessageConstants.GetHelpText(SlackConnector.SelfName));
         }
 
         private async Task Balance(SlackUser slackUser, SlackIMSession imSession)
@@ -365,9 +365,9 @@ namespace NxtTipbot
             return recipientAccount;
         }
 
-        private static Match IsTipCommand(string message)
+        private Match IsTipCommand(string message)
         {
-            var regex = new Regex("^\\s*(?i)tipper +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z]+)? *(.*)");
+            var regex = new Regex($"^\\s*(?i){SlackConnector.SelfName} +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z]+)? *(.*)");
             var match = regex.Match(message);
             return match;
         }

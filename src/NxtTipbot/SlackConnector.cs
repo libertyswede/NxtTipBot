@@ -15,6 +15,7 @@ namespace NxtTipbot
     public interface ISlackConnector
     {
         string SelfId { get; }
+        string SelfName { get; }
         Task SendMessage(string channelId, string message, bool unfurl_links = true);
         Task<string> GetInstantMessageId(string userId);
         SlackUser GetUser(string userId);
@@ -27,6 +28,8 @@ namespace NxtTipbot
         private readonly ISlackHandler slackHandler;
 
         public string SelfId { get; private set; }
+        public string SelfName { get; private set; }
+
         private List<SlackChannelSession> channelSessions;
         private List<SlackUser> slackUsers;
         private List<SlackIMSession> imSessions;
@@ -57,6 +60,7 @@ namespace NxtTipbot
                         var jObject = JObject.Parse(json);
                         websocketUri = (string)jObject["url"];
                         SelfId = (string)jObject["self"]["id"];
+                        SelfName = (string)jObject["self"]["name"];
                         channelSessions = JsonConvert.DeserializeObject<List<SlackChannelSession>>(jObject["channels"].ToString());
                         slackUsers = JsonConvert.DeserializeObject<List<SlackUser>>(jObject["users"].ToString());
                         imSessions = JsonConvert.DeserializeObject<List<SlackIMSession>>(jObject["ims"].ToString());
@@ -151,7 +155,7 @@ namespace NxtTipbot
             
             if (slackUser != null && slackUser.Id != SelfId)
             {
-                if (channel != null && message.Text.StartsWith("tipper", StringComparison.OrdinalIgnoreCase))
+                if (channel != null && message.Text.StartsWith(SelfName, StringComparison.OrdinalIgnoreCase))
                 {
                     await slackHandler.TipBotChannelCommand(message, slackUser, channel);
                 }

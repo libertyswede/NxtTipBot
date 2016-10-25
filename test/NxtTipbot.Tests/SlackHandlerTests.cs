@@ -18,11 +18,13 @@ namespace NxtTipbot.Tests
         private readonly SlackUser slackUser = new SlackUser { Id = "SlackUserId", Name = "XunitBot" };
         private readonly SlackUser recipientUser = new SlackUser { Id = TestConstants.RecipientAccount.SlackId, Name = "RecipientAccount" };
         private readonly string botUserId = "botUserId";
+        private readonly string botUserName = "tipper";
         private readonly ulong txId = 9837425;
 
         public SlackHandlerTests()
         {
             slackConnectorMock.SetupGet(c => c.SelfId).Returns(botUserId);
+            slackConnectorMock.SetupGet(c => c.SelfName).Returns(botUserName);
             slackConnectorMock.Setup(c => c.GetUser(It.Is<string>(recipient => string.Equals(recipient, TestConstants.RecipientAccount.SlackId)))).Returns(recipientUser);
             slackHandler = new SlackHandler(nxtConnectorMock.Object, walletRepositoryMock.Object, loggerMock.Object);
             slackHandler.SlackConnector = slackConnectorMock.Object;
@@ -39,7 +41,7 @@ namespace NxtTipbot.Tests
             await slackHandler.InstantMessageCommand(command, slackUser, imSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.HelpText)), true));
+                It.Is<string>(input => input.Equals(MessageConstants.GetHelpText(botUserName))), true));
         }
         
         [Theory]
