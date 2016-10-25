@@ -29,6 +29,7 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 * Case insentitive alias function for assets and currencies, eg. BTC --> SuperBTC, Ardor --> ARDR, etc.
 * Ability to withdraw assets and currencies that are NOT in the config.
 * Make bot react to @tipper as well as 'tipper' when using tip command.
+* Remove the hard coded reaction for 'tipper' and let it use whatever real slack nickname the bot is using.
 * Blockchain backup for account id --> id on master key.
 * List available assets / MS Currencies in a separate 'list units' or 'list transferables' DM command.
 * Be able to send to NXT aliases as well as @username and NXT addresses.
