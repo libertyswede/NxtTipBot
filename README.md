@@ -12,7 +12,7 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 1. Install [.NET Core](https://www.microsoft.com/net/core) for your platform.
 2. Download latest code of NxtTipbot
 3. Edit the [config.json](src/NxtTipbot/config.json) file in the src/NxtTipbot directory and set:
-  * apitoken - Slack api token key.
+  * apitoken - Slack api token key. - *You get this from the owner of the slack team*
   * walletFile - Path to where your Sqlite database file should be stored.
   * nxtServerAddress - The server address to the NXT server you wish to use.
   * masterKey - A secure 256-bit password used to generate deterministic secret phrases to each user.  
