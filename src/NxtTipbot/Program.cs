@@ -83,14 +83,19 @@ namespace NxtTipbot
 
         private static IEnumerable<TransferableConfig> GetTransferableConfiguration(IEnumerable<IConfigurationSection> configSettings, string section)
         {
-            var assetsSection = configSettings.SingleOrDefault(c => c.Key == section)?.GetChildren();
-            if (assetsSection != null)
+            var sections = configSettings.SingleOrDefault(c => c.Key == section)?.GetChildren();
+            if (sections != null)
             {
-                foreach (var assetConfig in assetsSection)
+                foreach (var section in sections)
                 {
-                    var id = ulong.Parse(assetConfig.GetChildren().Single(a => a.Key == "id").Value);
-                    var name = assetConfig.GetChildren().Single(a => a.Key == "name").Value;
-                    var recipientMessage = assetConfig.GetChildren().SingleOrDefault(a => a.Key == "recipientMessage")?.Value;
+                    var id = ulong.Parse(section.GetChildren().Single(a => a.Key == "id").Value);
+                    var name = section.GetChildren().Single(a => a.Key == "name").Value;
+                    var recipientMessage = section.GetChildren().SingleOrDefault(a => a.Key == "recipientMessage")?.Value;
+                    var monikers = section.GetChildren().SingleOrDefault(a => a.Key == "monikers");
+                    if (monikers != null)
+                    {
+
+                    }
                     yield return new TransferableConfig(id, name, recipientMessage);
                 }
             }

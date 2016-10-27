@@ -21,7 +21,8 @@
   //  {
   //    "id": "12659653638116877017",
   //    "name": "superBTC",
-  //    "recipientMessage": "Hey, you just recieved {amount} SuperBTC from {sender}!"
+  //    "recipientMessage": "Hey, you just recieved {amount} SuperBTC from {sender}!",
+  //    "monikers": [ "BTC", "XBT" ]
   //  }
   //]
 }
