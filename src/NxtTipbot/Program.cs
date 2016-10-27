@@ -81,9 +81,9 @@ namespace NxtTipbot
             return transferables;
         }
 
-        private static IEnumerable<TransferableConfig> GetTransferableConfiguration(IEnumerable<IConfigurationSection> configSettings, string section)
+        private static IEnumerable<TransferableConfig> GetTransferableConfiguration(IEnumerable<IConfigurationSection> configSettings, string configSection)
         {
-            var sections = configSettings.SingleOrDefault(c => c.Key == section)?.GetChildren();
+            var sections = configSettings.SingleOrDefault(c => c.Key == configSection)?.GetChildren();
             if (sections != null)
             {
                 foreach (var section in sections)
