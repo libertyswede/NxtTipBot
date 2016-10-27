@@ -26,9 +26,10 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 
 # Todo
 * Implement deposit/withdraw for MGW asset(s). Need to verify this with VB.
-* Case insentitive alias function for assets and currencies, eg. BTC --> SuperBTC, Ardor --> ARDR, etc.
+* Case insentitive moniker/alias function for assets and currencies, eg. BTC --> SuperBTC, Ardor --> ARDR, etc.
 * Ability to withdraw assets and currencies that are NOT in the config.
 * Blockchain backup for account id --> id on master key.
+* Config option for posting confirmation on a separate channel, or maybe just as DM to the sender+recipient.
 * List available assets / MS Currencies in a separate 'list units' or 'list transferables' DM command.
 * Be able to send to NXT aliases as well as @username and NXT addresses.
 * When trying to tip and sender has 0 NXT, use a more humoristic error message, like 'you're all out mate'.
