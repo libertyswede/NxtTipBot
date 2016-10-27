@@ -411,6 +411,17 @@ namespace NxtTipbot.Tests
                 It.Is<string>(input => input.Equals(MessageConstants.TipToAddressRsSentChannel(slackUser.Id, TestConstants.ValidAddressRs1, tipAmount, "NXT", txId, ""))), false));
         }
 
+        [Fact]
+        public async void TipShouldSucceedOnUserIdUsage()
+        {
+            const decimal tipAmount = 42;
+            var message = CreateChannelMessage($"<@{botUserId}> tip <@{TestConstants.RecipientAccount.SlackId}> 42");
+            await SendSuccessfulTip(message, tipAmount);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(slackUser.Id, TestConstants.RecipientAccount.SlackId, tipAmount, "NXT", txId, ""))), false));
+        }
+
         [Theory]
         [InlineData("")]
         [InlineData(" NXT")]

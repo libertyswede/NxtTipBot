@@ -244,15 +244,15 @@ namespace NxtTipbot
 
         private async Task Tip(SlackUser slackUser, Match match, SlackChannelSession channelSession)
         {
-            var recipient = match.Groups[1].Value;
+            var recipient = match.Groups[2].Value;
             var isRecipientSlackUser = IsSlackUserId(recipient);
             if (isRecipientSlackUser)
             {
                 recipient = recipient.Substring(2, recipient.Length - 3);
             }
-            var amountToTip = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-            var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? Nxt.Singleton.Name : match.Groups[3].Value;
-            var comment = string.IsNullOrEmpty(match.Groups[4].Value) ? string.Empty : match.Groups[4].Value;
+            var amountToTip = decimal.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
+            var unit = string.IsNullOrEmpty(match.Groups[4].Value) ? Nxt.Singleton.Name : match.Groups[4].Value;
+            var comment = string.IsNullOrEmpty(match.Groups[5].Value) ? string.Empty : match.Groups[5].Value;
             var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
             var account = await walletRepository.GetAccount(slackUser.Id);
 
@@ -367,7 +367,7 @@ namespace NxtTipbot
 
         private Match IsTipCommand(string message)
         {
-            var regex = new Regex($"^\\s*(?i){SlackConnector.SelfName} +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z]+)? *(.*)");
+            var regex = new Regex($"^\\s*(?i)({SlackConnector.SelfName}|<@{SlackConnector.SelfId}>) +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z]+)? *(.*)");
             var match = regex.Match(message);
             return match;
         }

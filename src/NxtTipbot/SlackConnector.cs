@@ -155,7 +155,7 @@ namespace NxtTipbot
             
             if (slackUser != null && slackUser.Id != SelfId)
             {
-                if (channel != null && message.Text.StartsWith(SelfName, StringComparison.OrdinalIgnoreCase))
+                if (channel != null && message.Text.StartsWith(SelfName, StringComparison.OrdinalIgnoreCase) || message.Text.StartsWith($"<@{SelfId}>"))
                 {
                     await slackHandler.TipBotChannelCommand(message, slackUser, channel);
                 }

@@ -28,8 +28,9 @@ namespace NxtTipbot
                     + "_deposit_ - shows your deposit address (or creates one if you don't have one already)\n"
                     + "_withdraw [nxt address] amount [unit]_ - withdraws amount to specified NXT address\n\n"
                     + "*Channel Commands*\n"
-                    + $"_{botName} tip [@user or NXT address] amount [unit] [comment]_ - sends a tip to specified user\n"
-                    + "For more information, please see: https://nxtwiki.org/wiki/Tipper_Service";
+                    + $"_@{botName} tip [@user or NXT address] amount [unit] [comment]_ - sends a tip to specified user\n"
+                    + "*More information*\n"
+                    + "https://nxtwiki.org/wiki/Tipper_Service";
         }
 
         public static string CurrentBalance(decimal balance, NxtTransferable transferable)
