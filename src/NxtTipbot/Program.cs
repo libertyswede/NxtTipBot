@@ -81,9 +81,9 @@ namespace NxtTipbot
             return transferables;
         }
 
-        private static IEnumerable<TransferableConfig> GetTransferableConfiguration(IEnumerable<IConfigurationSection> configSettings, string configSection)
+        private static IEnumerable<TransferableConfig> GetTransferableConfiguration(IEnumerable<IConfigurationSection> configSettings, string sectionName)
         {
-            var sections = configSettings.SingleOrDefault(c => c.Key == configSection)?.GetChildren();
+            var sections = configSettings.SingleOrDefault(c => c.Key == sectionName)?.GetChildren();
             if (sections != null)
             {
                 foreach (var section in sections)
@@ -92,11 +92,18 @@ namespace NxtTipbot
                     var name = section.GetChildren().Single(a => a.Key == "name").Value;
                     var recipientMessage = section.GetChildren().SingleOrDefault(a => a.Key == "recipientMessage")?.Value;
                     var monikers = section.GetChildren().SingleOrDefault(a => a.Key == "monikers");
-                    if (monikers != null)
-                    {
+                    yield return new TransferableConfig(id, name, recipientMessage, GetTransferableMonikers(monikers));
+                }
+            }
+        }
 
-                    }
-                    yield return new TransferableConfig(id, name, recipientMessage);
+        private static IEnumerable<string> GetTransferableMonikers(IConfigurationSection monikerSection)
+        {
+            if (monikerSection != null)
+            {
+                foreach (var moniker in monikerSection.GetChildren())
+                {
+                    yield return moniker.Value.Trim();
                 }
             }
         }
