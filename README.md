@@ -25,6 +25,7 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 2. In the test/NxtTipbot.Tests directory, type 'dotnet restore' and the 'dotnet test'
 
 # Todo
+* On startup, call getBlockchainStatus API function and check isDownloading property. If true, shut down with proper error message.
 * Implement deposit/withdraw for MGW asset(s). Need to verify this with VB.
 * Config option for local signing instead of relying on NRS signing transactions.
 * Case insentitive moniker/alias function for assets and currencies, eg. BTC --> SuperBTC, Ardor --> ARDR, etc.
