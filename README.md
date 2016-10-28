@@ -26,7 +26,6 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 
 # Todo
 * Implement deposit/withdraw for MGW asset(s). Need to verify this with VB.
-* Case insentitive moniker/alias function for assets and currencies, eg. BTC --> SuperBTC, Ardor --> ARDR, etc.
 * Ability to withdraw assets and currencies that are NOT in the config.
 * Blockchain backup for account id --> id on master key.
 * Config option for posting confirmation on a separate channel, or maybe just as DM to the sender+recipient.

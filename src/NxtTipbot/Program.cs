@@ -32,7 +32,7 @@ namespace NxtTipbot
             logger.LogInformation($"walletFile: {walletFile}");
             currencyConfigs.ToList().ForEach(c => logger.LogInformation($"currency id: {c.Id} ({c.Name})"));
             assetConfigs.ToList().ForEach(a => logger.LogInformation($"asset id: {a.Id} ({a.Name})"));
-
+            
             InitDatabase(walletFile);
             var walletRepository = new WalletRepository();
             var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress));

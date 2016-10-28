@@ -19,11 +19,11 @@ namespace NxtTipbot
 
     public class SlackHandler : ISlackHandler
     {
-
         private readonly INxtConnector nxtConnector;
         private readonly IWalletRepository walletRepository;
         private readonly ILogger logger;
         private readonly List<NxtTransferable> transferables = new List<NxtTransferable> { Nxt.Singleton };
+        private readonly Dictionary<string, NxtTransferable> transferableNames = new Dictionary<string, NxtTransferable> { { Nxt.Singleton.Name.ToLowerInvariant(), Nxt.Singleton } };
         public ISlackConnector SlackConnector { get; set; }
 
         public SlackHandler(INxtConnector nxtConnector, IWalletRepository walletRepository, ILogger logger)
@@ -35,10 +35,22 @@ namespace NxtTipbot
 
         public void AddTransferable(NxtTransferable transferable)
         {
-            if (transferables.Any(t => t.Name.Equals(transferable.Name, StringComparison.OrdinalIgnoreCase)))
+            var name = transferable.Name.ToLowerInvariant();
+            if (transferableNames.ContainsKey(name))
             {
                 throw new ArgumentException(nameof(transferable), $"Name of transferable must be unique, {transferable.Name} was already added.");
             }
+            transferableNames.Add(name, transferable);
+
+            foreach (var moniker in transferable.Monikers.Select(m => m.ToLowerInvariant()))
+            {
+                if (transferableNames.ContainsKey(moniker))
+                {
+                    throw new ArgumentException(nameof(transferable), $"Name of transferable must be unique, moniker {moniker} for {transferable.Name} was already added.");
+                }
+                transferableNames.Add(moniker, transferable);
+            }
+
             transferables.Add(transferable);
         }
 
@@ -184,10 +196,11 @@ namespace NxtTipbot
 
         private async Task Withdraw(SlackUser slackUser, SlackIMSession imSession, Match match)
         {
+            NxtTransferable transferable;
             var address = match.Groups[1].Value;
             var amountToWithdraw = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? Nxt.Singleton.Name : match.Groups[3].Value;
-            var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
+            transferableNames.TryGetValue(unit.ToLowerInvariant(), out transferable);
             var account = await walletRepository.GetAccount(slackUser.Id);
 
             if (account == null)
@@ -244,6 +257,7 @@ namespace NxtTipbot
 
         private async Task Tip(SlackUser slackUser, Match match, SlackChannelSession channelSession)
         {
+            NxtTransferable transferable;
             var recipient = match.Groups[2].Value;
             var isRecipientSlackUser = IsSlackUserId(recipient);
             if (isRecipientSlackUser)
@@ -253,7 +267,7 @@ namespace NxtTipbot
             var amountToTip = decimal.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
             var unit = string.IsNullOrEmpty(match.Groups[4].Value) ? Nxt.Singleton.Name : match.Groups[4].Value;
             var comment = string.IsNullOrEmpty(match.Groups[5].Value) ? string.Empty : match.Groups[5].Value;
-            var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
+            transferableNames.TryGetValue(unit.ToLowerInvariant(), out transferable);
             var account = await walletRepository.GetAccount(slackUser.Id);
 
             if (recipient == SlackConnector.SelfId)
@@ -367,7 +381,7 @@ namespace NxtTipbot
 
         private Match IsTipCommand(string message)
         {
-            var regex = new Regex($"^\\s*(?i)({SlackConnector.SelfName}|<@{SlackConnector.SelfId}>) +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z]+)? *(.*)");
+            var regex = new Regex($"^\\s*(?i)({SlackConnector.SelfName}|<@{SlackConnector.SelfId}>) +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z0-9_]+)? *(.*)");
             var match = regex.Match(message);
             return match;
         }

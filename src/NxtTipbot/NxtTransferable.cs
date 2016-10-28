@@ -1,5 +1,7 @@
 using NxtLib.AssetExchange;
 using NxtLib.MonetarySystem;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace NxtTipbot
 {
@@ -11,9 +13,11 @@ namespace NxtTipbot
         public string Name { get; }
         public int Decimals { get; }
         public abstract NxtTransferableType Type { get; }
+        public ReadOnlyCollection<string> Monikers { get; }
 
-        protected NxtTransferable (ulong id, string name, int decimals)
+        protected NxtTransferable (ulong id, string name, int decimals, List<string> monikers)
         {
+            Monikers = monikers.AsReadOnly();
             Id = id;
             Name = name;
             Decimals = decimals;
@@ -33,7 +37,7 @@ namespace NxtTipbot
     {
         public static readonly Nxt Singleton = new Nxt();
         public override NxtTransferableType Type { get { return NxtTransferableType.Nxt; } }
-        private Nxt() : base(0, "NXT", 8)
+        private Nxt() : base(0, "NXT", 8, new List<string>())
         {
         }
 
@@ -46,7 +50,8 @@ namespace NxtTipbot
     public class NxtAsset : NxtTransferable
     {
         public override NxtTransferableType Type { get { return NxtTransferableType.Asset; } }
-        public NxtAsset (Asset asset, string name, string recipientMessage) : base(asset.AssetId, name, asset.Decimals)
+        public NxtAsset (Asset asset, string name, string recipientMessage, List<string> monikers) 
+            : base(asset.AssetId, name, asset.Decimals, monikers)
         {
             RecipientMessage = recipientMessage;
         }
@@ -60,7 +65,8 @@ namespace NxtTipbot
     public class NxtCurrency : NxtTransferable
     {
         public override NxtTransferableType Type { get { return NxtTransferableType.Currency; } }
-        public NxtCurrency (Currency currency, string recipientMessage) : base(currency.CurrencyId, currency.Code, currency.Decimals)
+        public NxtCurrency (Currency currency, string recipientMessage, List<string> monikers) 
+            : base(currency.CurrencyId, currency.Code, currency.Decimals, monikers)
         {
             RecipientMessage = recipientMessage;
         }

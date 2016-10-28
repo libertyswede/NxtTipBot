@@ -74,13 +74,13 @@ namespace NxtTipbot
         public async Task<NxtAsset> GetAsset(TransferableConfig assetConfig)
         {
             var asset = await assetExchangeService.GetAsset(assetConfig.Id);
-            return new NxtAsset(asset, assetConfig.Name, assetConfig.RecipientMessage);
+            return new NxtAsset(asset, assetConfig.Name, assetConfig.RecipientMessage, assetConfig.Monikers);
         }
 
         public async Task<NxtCurrency> GetCurrency(TransferableConfig currencyConfig)
         {
             var currencyReply = await monetarySystemService.GetCurrency(CurrencyLocator.ByCurrencyId(currencyConfig.Id));
-            return new NxtCurrency(currencyReply, currencyConfig.RecipientMessage);
+            return new NxtCurrency(currencyReply, currencyConfig.RecipientMessage, currencyConfig.Monikers);
         }
         
         public async Task<decimal> GetBalance(NxtTransferable transferable, string addressRs)
