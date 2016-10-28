@@ -30,6 +30,7 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 * Case insentitive moniker/alias function for assets and currencies, eg. BTC --> SuperBTC, Ardor --> ARDR, etc.
 * Ability to withdraw assets and currencies that are NOT in the config.
 * Blockchain backup for account id --> id on master key.
+* Add support for self signed certificates when connecting to NXT Server.
 * Config option for posting confirmation on a separate channel, or maybe just as DM to the sender+recipient.
 * List available assets / MS Currencies in a separate 'list units' or 'list transferables' DM command.
 * Be able to send to NXT aliases as well as @username and NXT addresses.
