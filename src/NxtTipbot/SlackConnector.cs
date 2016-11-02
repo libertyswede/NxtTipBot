@@ -217,6 +217,7 @@ namespace NxtTipbot
         {
             var debugTarget = channelSessions.SingleOrDefault(s => s.Id == channelId)?.Name ?? 
                 slackUsers.Single(u => u.Id == imSessions.Single(s => s.Id == channelId).UserId).Name;
+            message = message.Replace("&", "%26amp;");
             logger.LogTrace($"Sending chat.postMessage to: {debugTarget} ({channelId}), message: {message}");
             using (var httpClient = new HttpClient())
             using (var response = await httpClient.GetAsync($"https://slack.com/api/chat.postMessage?token={apiToken}&channel={channelId}&text={message}&unfurl_links={unfurl_links}&as_user=true"))

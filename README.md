@@ -29,7 +29,6 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 * Ability to withdraw assets and currencies that are NOT in the config.
 * Blockchain backup for account id --> id on master key.
 * Config option for posting confirmation on a separate channel, or maybe just as DM to the sender+recipient.
-* List available assets / MS Currencies in a separate 'list units' or 'list transferables' DM command.
 * Be able to send to NXT aliases as well as @username and NXT addresses.
 * When trying to tip and sender has 0 NXT, use a more humoristic error message, like 'you're all out mate'.
 * Support having tip command as a part of a multi line chat message.

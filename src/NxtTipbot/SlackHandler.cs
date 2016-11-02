@@ -75,6 +75,10 @@ namespace NxtTipbot
             {
                 await Deposit(slackUser, imSession);
             }
+            else if (IsSingleWordCommand(messageText, "list"))
+            {
+                await List(imSession);
+            }
             else if ((match = IsWithdrawCommand(messageText)).Success)
             {
                 await Withdraw(slackUser, imSession, match);
@@ -108,6 +112,16 @@ namespace NxtTipbot
         private async Task Help(SlackIMSession imSession)
         {
             await SlackConnector.SendMessage(imSession.Id, MessageConstants.GetHelpText(SlackConnector.SelfName));
+        }
+
+        private async Task List(SlackIMSession imSession)
+        {
+            var message = MessageConstants.ListCommandHeader;
+            foreach (var transferable in transferables)
+            {
+                message += MessageConstants.ListCommandForTransferable(transferable);
+            }
+            await SlackConnector.SendMessage(imSession.Id, message.TrimEnd(), false);
         }
 
         private async Task Balance(SlackUser slackUser, SlackIMSession imSession)

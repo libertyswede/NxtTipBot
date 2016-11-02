@@ -43,7 +43,28 @@ namespace NxtTipbot.Tests
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
                 It.Is<string>(input => input.Equals(MessageConstants.GetHelpText(botUserName))), true));
         }
-        
+
+        [Theory]
+        [InlineData("list")]
+        [InlineData(" LIsT ")]
+        [InlineData("liST ")]
+        public async void List(string command)
+        {
+            slackHandler.AddTransferable(TestConstants.Asset);
+            var expected = MessageConstants.ListCommandHeader + 
+                MessageConstants.ListCommandForTransferable(Nxt.Singleton) +
+                MessageConstants.ListCommandForTransferable(TestConstants.Asset).TrimEnd();
+
+            await slackHandler.InstantMessageCommand(command, slackUser, imSession);
+
+            slackConnectorMock.Verify(c => c.SendMessage(imSession.Id,
+                It.Is<string>(input => input.StartsWith(MessageConstants.ListCommandHeader)), false));
+            slackConnectorMock.Verify(c => c.SendMessage(imSession.Id,
+                It.Is<string>(input => input.Contains(MessageConstants.ListCommandForTransferable(Nxt.Singleton).TrimEnd())), false));
+            slackConnectorMock.Verify(c => c.SendMessage(imSession.Id,
+                It.Is<string>(input => input.Contains(MessageConstants.ListCommandForTransferable(TestConstants.Asset).TrimEnd())), false));
+        }
+
         [Theory]
         [InlineData("balance")]
         [InlineData(" BALANCE ")]
