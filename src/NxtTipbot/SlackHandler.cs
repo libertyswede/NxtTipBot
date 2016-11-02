@@ -243,7 +243,7 @@ namespace NxtTipbot
 
         private static Match IsWithdrawCommand(string message)
         {
-            var regex = new Regex("^\\s*(?i)withdraw(?-i) +(NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z]+)?");
+            var regex = new Regex("^\\s*(?i)withdraw(?-i) +(NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z0-9_\\.]+)?");
             var match = regex.Match(message);
             return match;
         }
@@ -381,7 +381,7 @@ namespace NxtTipbot
 
         private Match IsTipCommand(string message)
         {
-            var regex = new Regex($"^\\s*(?i)({SlackConnector.SelfName}|<@{SlackConnector.SelfId}>) +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z0-9_]+)? *(.*)");
+            var regex = new Regex($"^\\s*(?i)({SlackConnector.SelfName}|<@{SlackConnector.SelfId}>) +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z0-9_\\.]+)? *(.*)");
             var match = regex.Match(message);
             return match;
         }
