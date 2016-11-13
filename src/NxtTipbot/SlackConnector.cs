@@ -101,6 +101,11 @@ namespace NxtTipbot
                 } while (result.Count == buffer.Length);
 
                 JObject jObject = null;
+                var jsonEnding = json.TrimEnd().EndsWith("}");
+                if (!jsonEnding)
+                {
+                    logger.LogWarning($"Json does not appear to be ended correctly!");
+                }
                 try
                 {
                     jObject = JObject.Parse(json);
