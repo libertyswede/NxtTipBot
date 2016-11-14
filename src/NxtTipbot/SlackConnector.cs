@@ -81,7 +81,7 @@ namespace NxtTipbot
         private async Task Recieve()
         {
             WebSocketReceiveResult result;
-            var buffer = new byte[65536];
+            var buffer = new byte[8192];
 
             while (webSocket.State == WebSocketState.Open)
             {
@@ -98,7 +98,7 @@ namespace NxtTipbot
                     }
 
                     json += encoder.GetString(buffer, 0, result.Count);
-                } while (result.Count == buffer.Length);
+                } while (result.Count == buffer.Length || !json.TrimEnd().EndsWith("}"));
 
                 JObject jObject = null;
                 var jsonEnding = json.TrimEnd().EndsWith("}");
