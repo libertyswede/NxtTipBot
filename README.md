@@ -27,6 +27,7 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 # Todo
 * Implement deposit/withdraw for MGW asset(s). Need to verify this with VB.
 * Ability to tip / withdraw using asset/currency id.
+* Show assets and currencies that are not in the config in the balance command.
 * Ability to withdraw assets and currencies that are NOT in the config.
 * Blockchain backup for account id --> id on master key.
 * Config option for posting confirmation on a separate channel, or maybe just as DM to the sender+recipient.
