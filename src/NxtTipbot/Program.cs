@@ -34,16 +34,17 @@ namespace NxtTipbot
             assetConfigs.ToList().ForEach(a => logger.LogInformation($"asset id: {a.Id} ({a.Name})"));
             
             InitDatabase(walletFile);
+            var transferables = new Transferables();
             var walletRepository = new WalletRepository();
             var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress));
-            var slackHandler = new SlackHandler(nxtConnector, walletRepository, logger);
+            var slackHandler = new SlackHandler(nxtConnector, walletRepository, transferables, logger);
             var slackConnector = new SlackConnector(apiToken, logger, slackHandler);
 
             CheckMasterKey(logger, masterKey, nxtConnector);
             nxtConnector.MasterKey = masterKey;
             slackHandler.SlackConnector = slackConnector;
-            var transferables = GetTransferables(currencyConfigs, assetConfigs, nxtConnector);
-            transferables.ForEach(t => slackHandler.AddTransferable(t));
+            var transferableList = GetTransferables(currencyConfigs, assetConfigs, nxtConnector);
+            transferableList.ForEach(t => transferables.AddTransferable(t));
 
             var slackTask = Task.Run(() => slackConnector.Run());
             Task.WaitAll(slackTask);

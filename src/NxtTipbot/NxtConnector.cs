@@ -7,6 +7,7 @@ using NxtLib.AssetExchange;
 using NxtLib.Local;
 using NxtLib.MonetarySystem;
 using NxtTipbot.Model;
+using System.Collections.Generic;
 
 namespace NxtTipbot
 {
@@ -16,6 +17,7 @@ namespace NxtTipbot
         Task<NxtAsset> GetAsset(TransferableConfig assetConfig);
         Task<NxtCurrency> GetCurrency(TransferableConfig currencyConfig);
         Task<decimal> GetBalance(NxtTransferable transferable, string addressRs);
+        Task<Dictionary<NxtTransferable, decimal>> GetBalances(string addressRs, IList<NxtTransferable> existingTransferables);
         Task<ulong> Transfer(NxtAccount senderAccount, string addressRs, NxtTransferable transferable, decimal amount, string message, string recipientPublicKey = "");
         string GenerateMasterKey();
         void SetNxtProperties(NxtAccount account);
@@ -74,7 +76,7 @@ namespace NxtTipbot
         public async Task<NxtAsset> GetAsset(TransferableConfig assetConfig)
         {
             var asset = await assetExchangeService.GetAsset(assetConfig.Id);
-            return new NxtAsset(asset, assetConfig.Name, assetConfig.RecipientMessage, assetConfig.Monikers);
+            return new NxtAsset(asset, assetConfig.RecipientMessage, assetConfig.Monikers);
         }
 
         public async Task<NxtCurrency> GetCurrency(TransferableConfig currencyConfig)
@@ -82,7 +84,48 @@ namespace NxtTipbot
             var currencyReply = await monetarySystemService.GetCurrency(CurrencyLocator.ByCurrencyId(currencyConfig.Id));
             return new NxtCurrency(currencyReply, currencyConfig.RecipientMessage, currencyConfig.Monikers);
         }
-        
+
+        public async Task<Dictionary<NxtTransferable, decimal>> GetBalances(string addressRs, IList<NxtTransferable> existingTransferables)
+        {
+            var nxtTask = GetNxtBalance(addressRs);
+            var assetsTask = GetAssets(addressRs);
+            var currenciesTask = GetCurrencies(addressRs);
+
+            await Task.WhenAll(nxtTask, assetsTask, currenciesTask);
+
+            var result = new Dictionary<NxtTransferable, decimal>();
+            result.Add(Nxt.Singleton, nxtTask.Result / (decimal)Math.Pow(10, Nxt.Singleton.Decimals));
+
+            foreach (var accountAsset in assetsTask.Result)
+            {
+                var transferable = existingTransferables.SingleOrDefault(t => t.Id == accountAsset.AssetId) ??
+                    new NxtAsset(accountAsset.AssetId, accountAsset.Name, accountAsset.Decimals);
+
+                result.Add(transferable, accountAsset.QuantityQnt / (decimal)Math.Pow(10, accountAsset.Decimals));
+            }
+
+            foreach (var accountCurrency in currenciesTask.Result)
+            {
+                var transferable = existingTransferables.SingleOrDefault(t => t.Id == accountCurrency.CurrencyId) ??
+                    new NxtCurrency(accountCurrency.CurrencyId, accountCurrency.Code, accountCurrency.Decimals);
+
+                result.Add(transferable, accountCurrency.UnconfirmedUnits / (decimal)Math.Pow(10, accountCurrency.Decimals));
+            }
+            return result;
+        }
+
+        private async Task<List<AccountAsset>> GetAssets(string addressRs)
+        {
+            var accountAssetReply = await assetExchangeService.GetAccountAssets(addressRs, includeAssetInfo: true);
+            return accountAssetReply.AccountAssets;
+        }
+
+        private async Task<List<AccountCurrency>> GetCurrencies(string addressRs)
+        {
+            var accountCurrencyReply = await monetarySystemService.GetAccountCurrencies(addressRs, includeCurrencyInfo: true);
+            return accountCurrencyReply.AccountCurrencies;
+        }
+
         public async Task<decimal> GetBalance(NxtTransferable transferable, string addressRs)
         {
             decimal unformattedBalance;

@@ -50,8 +50,14 @@ namespace NxtTipbot
     public class NxtAsset : NxtTransferable
     {
         public override NxtTransferableType Type { get { return NxtTransferableType.Asset; } }
-        public NxtAsset (Asset asset, string name, string recipientMessage, List<string> monikers) 
-            : base(asset.AssetId, name, asset.Decimals, monikers)
+
+        public NxtAsset(ulong assetId, string name, int decimals)
+            : base(assetId, name, decimals, new List<string>())
+        {
+        }
+
+        public NxtAsset (Asset asset, string recipientMessage, List<string> monikers) 
+            : base(asset.AssetId, asset.Name, asset.Decimals, monikers)
         {
             RecipientMessage = recipientMessage;
         }
@@ -65,6 +71,12 @@ namespace NxtTipbot
     public class NxtCurrency : NxtTransferable
     {
         public override NxtTransferableType Type { get { return NxtTransferableType.Currency; } }
+
+        public NxtCurrency(ulong currencyId, string currencyCode, int decimals)
+            : base(currencyId, currencyCode, decimals, new List<string>())
+        {
+        }
+
         public NxtCurrency (Currency currency, string recipientMessage, List<string> monikers) 
             : base(currency.CurrencyId, currency.Code, currency.Decimals, monikers)
         {

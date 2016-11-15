@@ -36,11 +36,15 @@ namespace NxtTipbot
                     + "https://nxtwiki.org/wiki/Tipper_Service";
         }
 
-        public static string CurrentBalance(decimal balance, NxtTransferable transferable)
+        public static string CurrentBalance(decimal balance, NxtTransferable transferable, bool unsupported = false)
         {
             if (transferable.Type == NxtTransferableType.Nxt)
             {
                 return $"Your current balance is {balance} NXT.";
+            }
+            if (unsupported)
+            {
+                return $"You also have {balance} {transferable.Name}, id: {transferable.Id} (this {transferable.Type.ToString().ToLower()} is not supported!).";
             }
             return $"You also have {balance} {transferable.Name}.";
         }
