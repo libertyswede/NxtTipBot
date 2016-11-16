@@ -3,6 +3,7 @@
   "walletFile": "c:\\nxttipbot\\nxttipbot.db",
   "nxtServerAddress": "http://localhost:7876/nxt",
   "masterKey": "",
+  "blockchainBackup": "false",
   "logging": {
     "logLevel": "Information"
   } //,
@@ -13,7 +14,8 @@
   //  {
   //    "id": "18154834130337484019",
   //    "name": "NAUT",
-  //    "recipientMessage": "Hey, you just recieved {amount} NAUT from {sender}!"
+  //    "recipientMessage": "Hey, you just recieved {amount} NAUT from {sender}!",
+  //    "monikers": [ "Nautilus" ]
   //  }
   //],
 

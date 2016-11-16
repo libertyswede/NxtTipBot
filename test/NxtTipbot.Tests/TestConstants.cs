@@ -1,6 +1,7 @@
 using NxtLib.AssetExchange;
 using NxtLib.MonetarySystem;
 using NxtTipbot.Model;
+using System.Collections.Generic;
 
 namespace NxtTipbot.Tests
 {
@@ -27,13 +28,14 @@ namespace NxtTipbot.Tests
             CurrencyId = 123,
             Code = "TEST",
             Decimals = 4
-        }, "{sender} just sent you {amount} TEST!");
+        }, "{sender} just sent you {amount} TEST!", new List<string>());
 
         public static readonly NxtAsset Asset = new NxtAsset(new Asset
         {
-            AssetId = 123,
-            Decimals = 4
-        }, "TEST", "{sender} just sent you {amount} TEST!");
+            AssetId = 234,
+            Decimals = 4,
+            Name = "TEST"
+        }, "{sender} just sent you {amount} TEST!", new List<string> { "TST", "TESTT" });
 
         public static readonly string ValidAddressRs1 = "NXT-G885-AKDX-5G2B-BLUCG";
         public static readonly string InvalidAddressRs1 = "NXT-G885-AKDX-582B-BLUCG";

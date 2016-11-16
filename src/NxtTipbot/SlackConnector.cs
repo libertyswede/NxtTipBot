@@ -81,7 +81,7 @@ namespace NxtTipbot
         private async Task Recieve()
         {
             WebSocketReceiveResult result;
-            var buffer = new byte[65536];
+            var buffer = new byte[8192];
 
             while (webSocket.State == WebSocketState.Open)
             {
@@ -98,7 +98,7 @@ namespace NxtTipbot
                     }
 
                     json += encoder.GetString(buffer, 0, result.Count);
-                } while (result.Count == buffer.Length);
+                } while (result.Count == buffer.Length || !json.TrimEnd().EndsWith("}"));
 
                 JObject jObject = null;
                 try
@@ -217,6 +217,7 @@ namespace NxtTipbot
         {
             var debugTarget = channelSessions.SingleOrDefault(s => s.Id == channelId)?.Name ?? 
                 slackUsers.Single(u => u.Id == imSessions.Single(s => s.Id == channelId).UserId).Name;
+            message = message.Replace("&", "%26amp;");
             logger.LogTrace($"Sending chat.postMessage to: {debugTarget} ({channelId}), message: {message}");
             using (var httpClient = new HttpClient())
             using (var response = await httpClient.GetAsync($"https://slack.com/api/chat.postMessage?token={apiToken}&channel={channelId}&text={message}&unfurl_links={unfurl_links}&as_user=true"))

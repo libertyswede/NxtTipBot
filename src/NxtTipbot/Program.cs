@@ -25,29 +25,58 @@ namespace NxtTipbot
             var masterKey = configSettings.Single(c => c.Key == "masterKey").Value;
             var currencyConfigs = GetTransferableConfiguration(configSettings, "currencies");
             var assetConfigs = GetTransferableConfiguration(configSettings, "assets");
+            var blockchainBackup = bool.Parse(configSettings.Single(c => c.Key == "blockchainBackup").Value);
 
             var logger = SetupLogging(logLevel);
             logger.LogInformation($"logLevel: {logLevel}");
             logger.LogInformation($"nxtServerAddress: {nxtServerAddress}");
             logger.LogInformation($"walletFile: {walletFile}");
+            logger.LogInformation($"blockchainBackup: {blockchainBackup}");
             currencyConfigs.ToList().ForEach(c => logger.LogInformation($"currency id: {c.Id} ({c.Name})"));
             assetConfigs.ToList().ForEach(a => logger.LogInformation($"asset id: {a.Id} ({a.Name})"));
 
             InitDatabase(walletFile);
-            var walletRepository = new WalletRepository();
+            var transferables = new Transferables();
             var nxtConnector = new NxtConnector(new ServiceFactory(nxtServerAddress));
-            var slackHandler = new SlackHandler(nxtConnector, walletRepository, logger);
+            var blockchainStore = blockchainBackup ? new BlockchainStore(masterKey, nxtConnector) : null;
+            var walletRepository = new WalletRepository(blockchainStore);
+            var slackHandler = new SlackHandler(nxtConnector, walletRepository, transferables, logger);
             var slackConnector = new SlackConnector(apiToken, logger, slackHandler);
 
             CheckMasterKey(logger, masterKey, nxtConnector);
             nxtConnector.MasterKey = masterKey;
+            VerifyBlockchainBackup(blockchainBackup, logger, nxtConnector, blockchainStore, walletRepository);
             slackHandler.SlackConnector = slackConnector;
-            var transferables = GetTransferables(currencyConfigs, assetConfigs, nxtConnector);
-            transferables.ForEach(t => slackHandler.AddTransferable(t));
+            var transferableList = GetTransferables(currencyConfigs, assetConfigs, nxtConnector);
+            transferableList.ForEach(t => transferables.AddTransferable(t));
 
             var slackTask = Task.Run(() => slackConnector.Run());
             Task.WaitAll(slackTask);
             logger.LogInformation("Exiting NxtTipbot");
+        }
+
+        private static void VerifyBlockchainBackup(bool blockchainBackup, ILogger logger, NxtConnector nxtConnector, 
+            BlockchainStore blockchainStore, WalletRepository walletRepository)
+        {
+            if (blockchainBackup)
+            {
+                logger.LogInformation("Verifying blockchain backup status...");
+                var backupCount = 0;
+                var accountCount = 0;
+
+                Task.Run(async () =>
+                {
+                    var balance = await nxtConnector.GetBalance(Nxt.Singleton, blockchainStore.MainAccount.AccountRs);
+                    if (balance < 10)
+                    {
+                        logger.LogWarning($"Make sure your main account ({blockchainStore.MainAccount.AccountRs}) is properly funded!");
+                    }
+                    var accounts = await walletRepository.GetAllAccounts();
+                    accountCount = accounts.Count;
+                    await blockchainStore.VerifyBackupStatus(accounts);
+                }).Wait();
+                logger.LogInformation($"Done, {backupCount} new accounts were backed up ({accountCount} total).");
+            }
         }
 
         private static void CheckMasterKey(ILogger logger, string masterKey, INxtConnector nxtConnector)
@@ -81,9 +110,9 @@ namespace NxtTipbot
             return transferables;
         }
 
-        private static IEnumerable<TransferableConfig> GetTransferableConfiguration(IEnumerable<IConfigurationSection> configSettings, string configSection)
+        private static IEnumerable<TransferableConfig> GetTransferableConfiguration(IEnumerable<IConfigurationSection> configSettings, string sectionName)
         {
-            var sections = configSettings.SingleOrDefault(c => c.Key == configSection)?.GetChildren();
+            var sections = configSettings.SingleOrDefault(c => c.Key == sectionName)?.GetChildren();
             if (sections != null)
             {
                 foreach (var section in sections)
@@ -92,11 +121,18 @@ namespace NxtTipbot
                     var name = section.GetChildren().Single(a => a.Key == "name").Value;
                     var recipientMessage = section.GetChildren().SingleOrDefault(a => a.Key == "recipientMessage")?.Value;
                     var monikers = section.GetChildren().SingleOrDefault(a => a.Key == "monikers");
-                    if (monikers != null)
-                    {
+                    yield return new TransferableConfig(id, name, recipientMessage, GetTransferableMonikers(monikers));
+                }
+            }
+        }
 
-                    }
-                    yield return new TransferableConfig(id, name, recipientMessage);
+        private static IEnumerable<string> GetTransferableMonikers(IConfigurationSection monikerSection)
+        {
+            if (monikerSection != null)
+            {
+                foreach (var moniker in monikerSection.GetChildren())
+                {
+                    yield return moniker.Value.Trim();
                 }
             }
         }

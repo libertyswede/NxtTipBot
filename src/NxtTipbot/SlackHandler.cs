@@ -1,12 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using NxtTipbot.Model;
 using Microsoft.Extensions.Logging;
 using NxtLib;
+using System.Collections.Generic;
 
 namespace NxtTipbot
 {
@@ -14,32 +13,22 @@ namespace NxtTipbot
     {
         Task InstantMessageCommand(string message, SlackUser slackUser, SlackIMSession imSession);
         Task TipBotChannelCommand(SlackMessage message, SlackUser slackUser, SlackChannelSession channelSession);
-        void AddTransferable(NxtTransferable transferable);
     }
 
     public class SlackHandler : ISlackHandler
     {
-
         private readonly INxtConnector nxtConnector;
         private readonly IWalletRepository walletRepository;
         private readonly ILogger logger;
-        private readonly List<NxtTransferable> transferables = new List<NxtTransferable> { Nxt.Singleton };
+        private readonly ITransferables transferables;
         public ISlackConnector SlackConnector { get; set; }
 
-        public SlackHandler(INxtConnector nxtConnector, IWalletRepository walletRepository, ILogger logger)
+        public SlackHandler(INxtConnector nxtConnector, IWalletRepository walletRepository, ITransferables transferables, ILogger logger)
         {
             this.nxtConnector = nxtConnector;
             this.walletRepository = walletRepository;
+            this.transferables = transferables;
             this.logger = logger;
-        }
-
-        public void AddTransferable(NxtTransferable transferable)
-        {
-            if (transferables.Any(t => t.Name.Equals(transferable.Name, StringComparison.OrdinalIgnoreCase)))
-            {
-                throw new ArgumentException(nameof(transferable), $"Name of transferable must be unique, {transferable.Name} was already added.");
-            }
-            transferables.Add(transferable);
         }
 
         public async Task InstantMessageCommand(string message, SlackUser slackUser, SlackIMSession imSession)
@@ -62,6 +51,10 @@ namespace NxtTipbot
             else if (IsSingleWordCommand(messageText, "deposit"))
             {
                 await Deposit(slackUser, imSession);
+            }
+            else if (IsSingleWordCommand(messageText, "list"))
+            {
+                await List(imSession);
             }
             else if ((match = IsWithdrawCommand(messageText)).Success)
             {
@@ -98,6 +91,16 @@ namespace NxtTipbot
             await SlackConnector.SendMessage(imSession.Id, MessageConstants.GetHelpText(SlackConnector.SelfName));
         }
 
+        private async Task List(SlackIMSession imSession)
+        {
+            var message = MessageConstants.ListCommandHeader;
+            foreach (var transferable in transferables.NxtTransferables)
+            {
+                message += MessageConstants.ListCommandForTransferable(transferable);
+            }
+            await SlackConnector.SendMessage(imSession.Id, message.TrimEnd(), false);
+        }
+
         private async Task Balance(SlackUser slackUser, SlackIMSession imSession)
         {
             var account = await walletRepository.GetAccount(slackUser.Id);
@@ -108,12 +111,19 @@ namespace NxtTipbot
                 return;
             }
             string message = "";
-            foreach (var transferable in transferables)
+            var balances = await nxtConnector.GetBalances(account.NxtAccountRs, transferables.NxtTransferables);
+            foreach (var balance in balances)
             {
-                var balance = await nxtConnector.GetBalance(transferable, account.NxtAccountRs);
-                if (balance > 0 || transferable == Nxt.Singleton)
+                if (balance.Value > 0 || balance.Key == Nxt.Singleton)
                 {
-                    message += MessageConstants.CurrentBalance(balance, transferable) + "\n";
+                    if (transferables.ContainsTransferable(balance.Key))
+                    {
+                        message += MessageConstants.CurrentBalance(balance.Value, balance.Key, false) + "\n";
+                    }
+                    else
+                    {
+                        message += MessageConstants.CurrentBalance(balance.Value, balance.Key, true) + "\n";
+                    }
                 }
             }
             await SlackConnector.SendMessage(imSession.Id, message.TrimEnd());
@@ -187,13 +197,31 @@ namespace NxtTipbot
             var address = match.Groups[1].Value;
             var amountToWithdraw = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             var unit = string.IsNullOrEmpty(match.Groups[3].Value) ? Nxt.Singleton.Name : match.Groups[3].Value;
-            var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
+            var transferable = transferables.GetTransferable(unit);
             var account = await walletRepository.GetAccount(slackUser.Id);
 
             if (account == null)
             {
                 await SlackConnector.SendMessage(imSession.Id, MessageConstants.NoAccount);
                 return;
+            }
+            if (transferable == null && unit.IsNumeric())
+            {
+                var id = ulong.Parse(unit);
+                try
+                {
+                    var asset = await nxtConnector.GetAsset(new TransferableConfig(id, "", "", new List<string>()));
+                    transferable = asset;
+                }
+                catch (Exception)
+                {
+                    try
+                    {
+                        var currency = await nxtConnector.GetCurrency(new TransferableConfig(id, "", "", new List<string>()));
+                        transferable = currency;
+                    }
+                    catch (Exception) { }
+                }
             }
             if (!(await VerifyParameters(transferable, unit, account, imSession.Id, amountToWithdraw)))
             {
@@ -230,7 +258,7 @@ namespace NxtTipbot
 
         private static Match IsWithdrawCommand(string message)
         {
-            var regex = new Regex("^\\s*(?i)withdraw(?-i) +(NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z]+)?");
+            var regex = new Regex("^\\s*(?i)withdraw(?-i) +(NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z0-9_\\.]+)?");
             var match = regex.Match(message);
             return match;
         }
@@ -253,7 +281,7 @@ namespace NxtTipbot
             var amountToTip = decimal.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
             var unit = string.IsNullOrEmpty(match.Groups[4].Value) ? Nxt.Singleton.Name : match.Groups[4].Value;
             var comment = string.IsNullOrEmpty(match.Groups[5].Value) ? string.Empty : match.Groups[5].Value;
-            var transferable = transferables.SingleOrDefault(t => t.Name.Equals(unit, StringComparison.OrdinalIgnoreCase));
+            var transferable = transferables.GetTransferable(unit);
             var account = await walletRepository.GetAccount(slackUser.Id);
 
             if (recipient == SlackConnector.SelfId)
@@ -367,7 +395,7 @@ namespace NxtTipbot
 
         private Match IsTipCommand(string message)
         {
-            var regex = new Regex($"^\\s*(?i)({SlackConnector.SelfName}|<@{SlackConnector.SelfId}>) +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z]+)? *(.*)");
+            var regex = new Regex($"^\\s*(?i)({SlackConnector.SelfName}|<@{SlackConnector.SelfId}>) +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z0-9_\\.]+)? *(.*)");
             var match = regex.Match(message);
             return match;
         }

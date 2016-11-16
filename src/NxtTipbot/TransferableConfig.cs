@@ -9,9 +9,10 @@ namespace NxtTipbot
         public string RecipientMessage { get; }
         public List<string> Monikers { get; }
 
-        public TransferableConfig(ulong id, string name, string recipientMessage)
+        public TransferableConfig(ulong id, string name, string recipientMessage, IEnumerable<string> monikers)
         {
             Monikers = new List<string>();
+            Monikers.AddRange(monikers);
             Id = id;
             Name = name;
             RecipientMessage = recipientMessage;

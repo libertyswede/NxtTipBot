@@ -21,23 +21,30 @@ namespace NxtTipbot
 
         public const string CommentTooLongChannel = "Are you writing an article? Try shortening your comment.";
 
+        public const string ListCommandHeader = "List of supported units:\n\n";
+
         public static string GetHelpText(string botName)
         {
             return "*Direct Message Commands*\n"
                     + "_balance_ - Wallet balance\n"
                     + "_deposit_ - shows your deposit address (or creates one if you don't have one already)\n"
-                    + "_withdraw [nxt address] amount [unit]_ - withdraws amount to specified NXT address\n\n"
+                    + "_withdraw [nxt address] amount [unit]_ - withdraws amount to specified NXT address\n"
+                    + "_list_ - shows a list of supported units\n\n"
                     + "*Channel Commands*\n"
                     + $"_@{botName} tip [@user or NXT address] amount [unit] [comment]_ - sends a tip to specified user\n\n"
                     + "*More information*\n"
                     + "https://nxtwiki.org/wiki/Tipper_Service";
         }
 
-        public static string CurrentBalance(decimal balance, NxtTransferable transferable)
+        public static string CurrentBalance(decimal balance, NxtTransferable transferable, bool unsupported = false)
         {
             if (transferable.Type == NxtTransferableType.Nxt)
             {
                 return $"Your current balance is {balance} NXT.";
+            }
+            if (unsupported)
+            {
+                return $"You also have {balance} {transferable.Name}, id: {transferable.Id} (this {transferable.Type.ToString().ToLower()} is not supported!).";
             }
             return $"You also have {balance} {transferable.Name}.";
         }
@@ -102,6 +109,36 @@ namespace NxtTipbot
                 message += $" - {comment}";
             }
             return message;
+        }
+
+        public static string ListCommandForTransferable(NxtTransferable transferable)
+        {
+            var message = $"*{transferable.Name}*";
+            if (transferable.Type == NxtTransferableType.Nxt)
+            {
+                message += " - https://nxt.org/";
+            }
+            if (transferable.Type == NxtTransferableType.Asset)
+            {
+                message += $" ({transferable.Type.ToString()})\n" + 
+                    $"https://nxtportal.org/assets/{transferable.Id}\n";
+            }
+            else if (transferable.Type == NxtTransferableType.Currency)
+            {
+                message += $" ({transferable.Type.ToString()})\n" + 
+                    $"https://nxtportal.org/currencies/{transferable.Id}\n";
+            }
+            if (transferable.Monikers.Count > 0)
+            {
+                message += "Available monikers: ";
+                foreach (var moniker in transferable.Monikers)
+                {
+                    message += $"{moniker}, ";
+                }
+                message = message.Substring(0, message.Length - 2);
+            }
+                            
+            return message + "\n\n";
         }
 
         public static string RecipientDoesNotHaveAnyNxtHint(string recipientSlackId, string unit)
