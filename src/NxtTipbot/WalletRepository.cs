@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using NxtTipbot.Model;
+using System.Collections.Generic;
 
 namespace NxtTipbot
 {
@@ -13,6 +14,15 @@ namespace NxtTipbot
 
     public class WalletRepository : IWalletRepository
     {
+        private readonly IBlockchainStore blockchainStore;
+        private readonly bool doBlockchainBackup;
+
+        public WalletRepository(IBlockchainStore blockchainStore)
+        {
+            this.blockchainStore = blockchainStore;
+            doBlockchainBackup = blockchainStore != null;
+        }
+
         public async Task<NxtAccount> GetAccount(string slackId)
         {
             using (var context = new WalletContext())
@@ -22,12 +32,25 @@ namespace NxtTipbot
             }
         }
 
+        public async Task<List<NxtAccount>> GetAllAccounts()
+        {
+            using (var context = new WalletContext())
+            {
+                var accounts = await context.NxtAccounts.ToListAsync();
+                return accounts;
+            }
+        }
+
         public async Task<NxtAccount> AddAccount(NxtAccount account)
         {
             using (var context = new WalletContext())
             {
                 context.NxtAccounts.Add(account);
                 await context.SaveChangesAsync();
+                if (doBlockchainBackup)
+                {
+                    await blockchainStore.BackupAccount(account);
+                }
                 return account;
             }
         }

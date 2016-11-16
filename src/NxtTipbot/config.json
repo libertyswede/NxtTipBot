@@ -3,6 +3,7 @@
   "walletFile": "c:\\nxttipbot\\nxttipbot.db",
   "nxtServerAddress": "http://localhost:7876/nxt",
   "masterKey": "",
+  "blockchainBackup": "false",
   "logging": {
     "logLevel": "Information"
   } //,

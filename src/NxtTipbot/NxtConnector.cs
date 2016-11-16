@@ -8,12 +8,15 @@ using NxtLib.Local;
 using NxtLib.MonetarySystem;
 using NxtTipbot.Model;
 using System.Collections.Generic;
+using NxtLib.TaggedData;
+using Newtonsoft.Json;
 
 namespace NxtTipbot
 {
     public interface INxtConnector
     {
         string MasterKey { set; }
+        AccountWithPublicKey GetAccountFromSecretPhrase(string secretPhrase);
         Task<NxtAsset> GetAsset(TransferableConfig assetConfig);
         Task<NxtCurrency> GetCurrency(TransferableConfig currencyConfig);
         Task<decimal> GetBalance(NxtTransferable transferable, string addressRs);
@@ -22,6 +25,10 @@ namespace NxtTipbot
         string GenerateMasterKey();
         void SetNxtProperties(NxtAccount account);
         bool IsValidAddressRs(string addressRs);
+        Task<List<Model.EncryptedMessage>> SearchTaggedData(string accountRs, string tags);
+        string Decrypt(Model.EncryptedMessage message, AccountWithPublicKey account, string secretPhrase);
+        Model.EncryptedMessage Encrypt(string data, AccountWithPublicKey account, string secretPhrase);
+        Task UploadTaggedData(string data, string name, string tags, string description, string secretPhrase);
     }
 
     public class NxtConnector : INxtConnector
@@ -29,6 +36,7 @@ namespace NxtTipbot
         private readonly IAccountService accountService;
         private readonly IMonetarySystemService monetarySystemService;
         private readonly IAssetExchangeService assetExchangeService;
+        private readonly ITaggedDataService taggedDataService;
 
         public string MasterKey { private get; set; }
 
@@ -37,6 +45,7 @@ namespace NxtTipbot
             accountService = serviceFactory.CreateAccountService();
             monetarySystemService = serviceFactory.CreateMonetarySystemService();
             assetExchangeService = serviceFactory.CreateAssetExchangeService();
+            taggedDataService = serviceFactory.CreateTaggedDataService();
         }
 
         public string GenerateMasterKey()
@@ -67,10 +76,16 @@ namespace NxtTipbot
 
         private void SetAccountRs(NxtAccount account)
         {
-            var localAccountService = new LocalAccountService();
-            var accountWithPublicKey = localAccountService.GetAccount(AccountIdLocator.BySecretPhrase(account.SecretPhrase));
+            var accountWithPublicKey = GetAccountFromSecretPhrase(account.SecretPhrase);
             account.NxtPublicKey = accountWithPublicKey.PublicKey.ToHexString();
             account.NxtAccountRs = accountWithPublicKey.AccountRs;
+        }
+
+        public AccountWithPublicKey GetAccountFromSecretPhrase(string secretPhrase)
+        {
+            var localAccountService = new LocalAccountService();
+            var accountWithPublicKey = localAccountService.GetAccount(AccountIdLocator.BySecretPhrase(secretPhrase));
+            return accountWithPublicKey;
         }
 
         public async Task<NxtAsset> GetAsset(TransferableConfig assetConfig)
@@ -207,6 +222,38 @@ namespace NxtTipbot
             {
                 return false;
             }
+        }
+
+        public async Task<List<Model.EncryptedMessage>> SearchTaggedData(string accountRs, string tags)
+        {
+            var reply = await taggedDataService.SearchTaggedData(null, tags, accountRs, includeData: true);
+            var list = reply.Data.Select(d => JsonConvert.DeserializeObject<Model.EncryptedMessage>(d.Data)).ToList();
+            return list;
+        }
+
+        public string Decrypt(Model.EncryptedMessage message, AccountWithPublicKey account, string secretPhrase)
+        {
+            var localMessageService = new LocalMessageService();
+            var decrypted = localMessageService.DecryptTextFrom(account.PublicKey, message.Message, message.Nonce, true, secretPhrase);
+            return decrypted;
+        }
+
+        public Model.EncryptedMessage Encrypt(string data, AccountWithPublicKey account, string secretPhrase)
+        {
+            var localMessageService = new LocalMessageService();
+            var nonce = localMessageService.CreateNonce();
+            var encrypted = localMessageService.EncryptTextTo(account.PublicKey, data, nonce, true, secretPhrase);
+            return new Model.EncryptedMessage
+            {
+                Message = encrypted.ToString(),
+                Nonce = nonce.ToString()
+            };
+        }
+
+        public async Task UploadTaggedData(string data, string name, string tags, string description, string secretPhrase)
+        {
+            var parameters = new CreateTransactionBySecretPhrase(true, 1440, Amount.OneNxt, secretPhrase);
+            var reply = await taggedDataService.UploadTaggedData(name, data, parameters, null, description, tags, isText: true);
         }
     }
 }
