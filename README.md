@@ -26,7 +26,7 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 
 # Todo
 * Implement deposit/withdraw for MGW asset(s). Need to verify this with VB.
-* Blockchain backup for account id --> id on master key.
+* Utility to restore blockchain backup to sqlite database. (should be a separate application)
 * Config option for posting confirmation on a separate channel, or maybe just as DM to the sender+recipient.
 * Be able to send to NXT aliases as well as @username and NXT addresses.
 * When trying to tip and sender has 0 NXT, use a more humoristic error message, like 'you're all out mate'.
