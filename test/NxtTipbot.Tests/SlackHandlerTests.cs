@@ -535,8 +535,9 @@ namespace NxtTipbot.Tests
         {
             const decimal tipAmount = 42;
             const decimal balance = 400;
+            var recipients = $"<@{TestConstants.RecipientAccount.SlackId}>, <@{TestConstants.RecipientAccount2.SlackId}>";
             var txId2 = txId + 1;
-            var message = CreateChannelMessage($"<@{botUserId}> tip <@{TestConstants.RecipientAccount.SlackId}>, <@{TestConstants.RecipientAccount2.SlackId}> {tipAmount}");
+            var message = CreateChannelMessage($"<@{botUserId}> tip {recipients} {tipAmount}");
 
             SetupNxtAccount(TestConstants.SenderAccount, balance);
             SetupNxtAccount(TestConstants.RecipientAccount, 0);
@@ -560,12 +561,14 @@ namespace NxtTipbot.Tests
                 It.IsAny<string>()))
                     .ReturnsAsync(txId2);
 
+            slackConnectorMock.Setup(c => c.GetInstantMessageId(It.Is<string>(id => id == TestConstants.RecipientAccount.SlackId))).ReturnsAsync(imSession.Id);
+
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
-                It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(slackUser.Id, TestConstants.RecipientAccount.SlackId, tipAmount, "NXT", txId, ""))), false));
-            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
-                It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(slackUser.Id, TestConstants.RecipientAccount2.SlackId, tipAmount, "NXT", txId2, ""))), false));
+                It.Is<string>(input => input.Equals(MessageConstants.MultitipSentChannel(slackUser.Id, recipients, tipAmount, "NXT", ""))), true));
+            slackConnectorMock.Verify(c => c.SendMessage(imSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.TipSentDirectMessage(slackUser.Id, tipAmount, "NXT", txId))), true));
         }
 
         [Theory]

@@ -320,33 +320,50 @@ namespace NxtTipbot
                 return;
             }
 
-            foreach (var slackUserId in slackUserIds)
+            if (isRecipientSlackUser)
             {
-                var recipientAccount = await walletRepository.GetAccount(slackUserId);
-                var recipientPublicKey = "";
-                if (recipientAccount == null)
+                foreach (var slackUserId in slackUserIds)
                 {
-                    recipientAccount = await SendTipRecievedInstantMessage(slackUser, slackUserId);
-                    recipientPublicKey = recipientAccount.NxtPublicKey;
-                }
+                    var recipientAccount = await walletRepository.GetAccount(slackUserId);
+                    var recipientPublicKey = "";
+                    if (recipientAccount == null)
+                    {
+                        recipientAccount = await SendTipRecievedInstantMessage(slackUser, slackUserId);
+                        recipientPublicKey = recipientAccount.NxtPublicKey;
+                    }
 
-                try
-                {
-                    var recipientUserName = SlackConnector.GetUser(slackUserId).Name;
-                    var txMessage = MessageConstants.NxtTipTransactionMessage(slackUser.Name, recipientUserName, comment);
-                    var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToTip, txMessage, recipientPublicKey);
-                    var reply = MessageConstants.TipSentChannel(slackUser.Id, slackUserId, amountToTip, transferable.Name, txId, comment);
-                    await SlackConnector.SendMessage(channelSession.Id, reply, false);
-                    await SendTransferableRecipientMessage(slackUser, slackUserId, transferable, recipientAccount, amountToTip);
-                    await SendTransferableSenderMessage(slackUser, slackUserId, transferable, recipientAccount);
+                    try
+                    {
+                        var recipientUserName = SlackConnector.GetUser(slackUserId).Name;
+                        var txMessage = MessageConstants.NxtTipTransactionMessage(slackUser.Name, recipientUserName, comment);
+                        var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToTip, txMessage, recipientPublicKey);
+                        if (recipientCount == 1)
+                        {
+                            var reply = MessageConstants.TipSentChannel(slackUser.Id, slackUserId, amountToTip, transferable.Name, txId, comment);
+                            await SlackConnector.SendMessage(channelSession.Id, reply, false);
+                        }
+                        else
+                        {
+                            var imId = await SlackConnector.GetInstantMessageId(slackUserId);
+                            var reply = MessageConstants.TipSentDirectMessage(slackUser.Id, amountToTip, transferable.Name, txId);
+                            await SlackConnector.SendMessage(imId, reply);
+                        }
+                        await SendTransferableRecipientMessage(slackUser, slackUserId, transferable, recipientAccount, amountToTip);
+                        await SendTransferableSenderMessage(slackUser, slackUserId, transferable, recipientAccount);
+                    }
+                    catch (NxtException e)
+                    {
+                        logger.LogError(0, e, e.Message);
+                        throw;
+                    }
                 }
-                catch (NxtException e)
+                if (recipientCount > 1)
                 {
-                    logger.LogError(0, e, e.Message);
-                    throw;
+                    var reply = MessageConstants.MultitipSentChannel(slackUser.Id, recipient, amountToTip, transferable.Name, comment);
+                    await SlackConnector.SendMessage(channelSession.Id, reply);
                 }
             }
-            if (!isRecipientSlackUser)
+            else
             {
                 try
                 {

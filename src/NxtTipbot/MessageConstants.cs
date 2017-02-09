@@ -97,6 +97,16 @@ namespace NxtTipbot
             return $"<@{senderSlackId}> => <@{recipientSlackId}> {amount} {unit} {message} (https://nxtportal.org/transactions/{txId})";
         }
 
+        public static string MultitipSentChannel(string senderSlackId, string recipients, decimal amount, string unit, string message)
+        {
+            return $"<@{senderSlackId}> => {recipients} {amount} {unit} {message}";
+        }
+
+        public static string TipSentDirectMessage(string senderSlackId, decimal amount, string unit, ulong txId)
+        {
+            return $"<@{senderSlackId}> tipped you {amount} {unit} (https://nxtportal.org/transactions/{txId})";
+        }
+
         public static string NxtTipTransactionMessage(string sender, string recipient, string comment)
         {
             var message = $"tip from slack tipper - from {sender}";
