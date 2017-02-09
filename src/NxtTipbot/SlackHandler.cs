@@ -6,6 +6,7 @@ using NxtTipbot.Model;
 using Microsoft.Extensions.Logging;
 using NxtLib;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NxtTipbot
 {
@@ -152,7 +153,7 @@ namespace NxtTipbot
             return account;
         }
 
-        private async Task<bool> VerifyParameters(NxtTransferable transferable, string unit, NxtAccount account, string slackSessionId, decimal amount)
+        private async Task<bool> VerifyParameters(NxtTransferable transferable, string unit, NxtAccount account, string slackSessionId, decimal amount, int recipientCount = 1)
         {
             if (transferable == null)
             {
@@ -160,15 +161,16 @@ namespace NxtTipbot
                 return false;
             }
 
+            amount *= recipientCount;
             var nxtBalance = await nxtConnector.GetBalance(Nxt.Singleton, account.NxtAccountRs);
             if (transferable == Nxt.Singleton)
             {
-                if (nxtBalance >= amount && nxtBalance < amount + 1)
+                if (nxtBalance >= amount && nxtBalance < amount + 1 && recipientCount == 1)
                 {
                     await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFundsNeedFee(nxtBalance));
                     return false;
                 }
-                if (nxtBalance < amount + 1)
+                if (nxtBalance < amount + recipientCount)
                 {
                     await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFunds(nxtBalance, transferable.Name));
                     return false;
@@ -176,9 +178,9 @@ namespace NxtTipbot
             }
             else
             {
-                if (nxtBalance < 1)
+                if (nxtBalance < recipientCount)
                 {
-                    await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFundsNeedFee(nxtBalance));
+                    await SlackConnector.SendMessage(slackSessionId, MessageConstants.NotEnoughFundsNeedFee(nxtBalance, recipientCount));
                     return false;
                 }
 
@@ -263,33 +265,37 @@ namespace NxtTipbot
             return match;
         }
 
-        private bool IsSlackUserId(string input)
+        private List<string> GetSlackUserIds(string input)
         {
-            var regex = new Regex("<@[A-Za-z0-9]+>");
-            var success = regex.IsMatch(input);
-            return success;
+            var userIds = new List<string>();
+            var regex = new Regex("[\\s,?]*(?:<@([A-Za-z0-9]+)>)+");
+            var matches = regex.Matches(input);
+
+            foreach (Match match in matches)
+            {
+                userIds.Add(match.Groups[1].Value);
+            }
+            return userIds;
         }
 
         private async Task Tip(SlackUser slackUser, Match match, SlackChannelSession channelSession)
         {
             var recipient = match.Groups[2].Value;
-            var isRecipientSlackUser = IsSlackUserId(recipient);
-            if (isRecipientSlackUser)
-            {
-                recipient = recipient.Substring(2, recipient.Length - 3);
-            }
-            var amountToTip = decimal.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
-            var unit = string.IsNullOrEmpty(match.Groups[4].Value) ? Nxt.Singleton.Name : match.Groups[4].Value;
-            var comment = string.IsNullOrEmpty(match.Groups[5].Value) ? string.Empty : match.Groups[5].Value;
+            var slackUserIds = GetSlackUserIds(recipient);
+            var isRecipientSlackUser = slackUserIds.Any();
+            var recipientCount = isRecipientSlackUser ? slackUserIds.Count : 1;
+            var amountToTip = decimal.Parse(match.Groups["amount"].Value, CultureInfo.InvariantCulture);
+            var unit = string.IsNullOrEmpty(match.Groups["unit"].Value) ? Nxt.Singleton.Name : match.Groups["unit"].Value;
+            var comment = string.IsNullOrEmpty(match.Groups["comment"].Value) ? string.Empty : match.Groups["comment"].Value;
             var transferable = transferables.GetTransferable(unit);
             var account = await walletRepository.GetAccount(slackUser.Id);
 
-            if (recipient == SlackConnector.SelfId)
+            if (slackUserIds.Contains(SlackConnector.SelfId))
             {
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.CantTipBotChannel);
                 return;
             }
-            if (recipient == slackUser.Id)
+            if (slackUserIds.Contains(slackUser.Id))
             {
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.CantTipYourselfChannel);
                 return;
@@ -309,30 +315,30 @@ namespace NxtTipbot
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.CommentTooLongChannel);
                 return;
             }
-            if (!(await VerifyParameters(transferable, unit, account, channelSession.Id, amountToTip)))
+            if (!(await VerifyParameters(transferable, unit, account, channelSession.Id, amountToTip, recipientCount)))
             {
                 return;
             }
 
-            if (isRecipientSlackUser)
+            foreach (var slackUserId in slackUserIds)
             {
-                var recipientAccount = await walletRepository.GetAccount(recipient);
+                var recipientAccount = await walletRepository.GetAccount(slackUserId);
                 var recipientPublicKey = "";
                 if (recipientAccount == null)
                 {
-                    recipientAccount = await SendTipRecievedInstantMessage(slackUser, recipient);
+                    recipientAccount = await SendTipRecievedInstantMessage(slackUser, slackUserId);
                     recipientPublicKey = recipientAccount.NxtPublicKey;
                 }
 
                 try
                 {
-                    var recipientUserName = SlackConnector.GetUser(recipient).Name;
+                    var recipientUserName = SlackConnector.GetUser(slackUserId).Name;
                     var txMessage = MessageConstants.NxtTipTransactionMessage(slackUser.Name, recipientUserName, comment);
                     var txId = await nxtConnector.Transfer(account, recipientAccount.NxtAccountRs, transferable, amountToTip, txMessage, recipientPublicKey);
-                    var reply = MessageConstants.TipSentChannel(slackUser.Id, recipient, amountToTip, transferable.Name, txId, comment);
+                    var reply = MessageConstants.TipSentChannel(slackUser.Id, slackUserId, amountToTip, transferable.Name, txId, comment);
                     await SlackConnector.SendMessage(channelSession.Id, reply, false);
-                    await SendTransferableRecipientMessage(slackUser, recipient, transferable, recipientAccount, amountToTip);
-                    await SendTransferableSenderMessage(slackUser, recipient, transferable, recipientAccount);
+                    await SendTransferableRecipientMessage(slackUser, slackUserId, transferable, recipientAccount, amountToTip);
+                    await SendTransferableSenderMessage(slackUser, slackUserId, transferable, recipientAccount);
                 }
                 catch (NxtException e)
                 {
@@ -340,7 +346,7 @@ namespace NxtTipbot
                     throw;
                 }
             }
-            else
+            if (!isRecipientSlackUser)
             {
                 try
                 {
@@ -395,7 +401,7 @@ namespace NxtTipbot
 
         private Match IsTipCommand(string message)
         {
-            var regex = new Regex($"^\\s*(?i)({SlackConnector.SelfName}|<@{SlackConnector.SelfId}>) +tip(?-i) +(<@[A-Za-z0-9]+>|NXT-[A-Z0-9\\-]+) +([0-9]+\\.?[0-9]*) *([A-Za-z0-9_\\.]+)? *(.*)");
+            var regex = new Regex($"^\\s*(?i)({SlackConnector.SelfName}|<@{SlackConnector.SelfId}>) +tip(?-i) +((\\s*,?\\s*<@[A-Za-z0-9]+>){{0,5}}|NXT-[A-Z0-9\\-]+) +(?<amount>[0-9]+\\.?[0-9]*) *(?<unit>[A-Za-z0-9_\\.]+)? *(?<comment>.*)");
             var match = regex.Match(message);
             return match;
         }

@@ -23,6 +23,14 @@ namespace NxtTipbot.Tests
             NxtAccountRs = "NXT-K5KL-23DJ-3XLK-22222"
         };
 
+        public static readonly NxtAccount RecipientAccount2 = new NxtAccount
+        {
+            Id = 44,
+            SlackId = "RecipientUserId2",
+            SecretPhrase = "TopSecret",
+            NxtAccountRs = "NXT-K5KL-23DJ-3XLK-22223"
+        };
+
         public static readonly NxtCurrency Currency = new NxtCurrency(new Currency
         {
             CurrencyId = 123,

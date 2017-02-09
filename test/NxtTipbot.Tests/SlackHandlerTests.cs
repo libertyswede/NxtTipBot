@@ -19,6 +19,7 @@ namespace NxtTipbot.Tests
         private readonly SlackChannelSession channelSession = new SlackChannelSession { Id = "channelSessionId", Name = "#general" };
         private readonly SlackUser slackUser = new SlackUser { Id = "SlackUserId", Name = "XunitBot" };
         private readonly SlackUser recipientUser = new SlackUser { Id = TestConstants.RecipientAccount.SlackId, Name = "RecipientAccount" };
+        private readonly SlackUser recipientUser2 = new SlackUser { Id = TestConstants.RecipientAccount2.SlackId, Name = "RecipientAccount2" };
         private readonly string botUserId = "botUserId";
         private readonly string botUserName = "tipper";
         private readonly ulong txId = 9837425;
@@ -28,6 +29,7 @@ namespace NxtTipbot.Tests
             slackConnectorMock.SetupGet(c => c.SelfId).Returns(botUserId);
             slackConnectorMock.SetupGet(c => c.SelfName).Returns(botUserName);
             slackConnectorMock.Setup(c => c.GetUser(It.Is<string>(recipient => string.Equals(recipient, TestConstants.RecipientAccount.SlackId)))).Returns(recipientUser);
+            slackConnectorMock.Setup(c => c.GetUser(It.Is<string>(recipient => string.Equals(recipient, TestConstants.RecipientAccount2.SlackId)))).Returns(recipientUser2);
             slackHandler = new SlackHandler(nxtConnectorMock.Object, walletRepositoryMock.Object, transferables, loggerMock.Object);
             slackHandler.SlackConnector = slackConnectorMock.Object;
             nxtConnectorMock.Setup(c => c.IsValidAddressRs(It.Is<string>(a => a == TestConstants.ValidAddressRs1))).Returns(true);
@@ -206,7 +208,7 @@ namespace NxtTipbot.Tests
             await slackHandler.InstantMessageCommand($"withdraw {TestConstants.RecipientAccount.NxtAccountRs} {amount}", slackUser, imSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id,
-                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance, 1))), true));
         }
 
         [Theory]
@@ -284,7 +286,7 @@ namespace NxtTipbot.Tests
             await slackHandler.InstantMessageCommand($"withdraw {TestConstants.RecipientAccount.NxtAccountRs} 42 {transferable.Name}", slackUser, imSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(imSession.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance, 1))), true));
         }
 
         [Fact]
@@ -429,7 +431,7 @@ namespace NxtTipbot.Tests
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
-                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance, 1))), true));
         }
 
         [Fact]
@@ -472,11 +474,98 @@ namespace NxtTipbot.Tests
         public async void TipShouldSucceedOnUserIdUsage()
         {
             const decimal tipAmount = 42;
-            var message = CreateChannelMessage($"<@{botUserId}> tip <@{TestConstants.RecipientAccount.SlackId}> 42");
+            var message = CreateChannelMessage($"<@{botUserId}> tip <@{TestConstants.RecipientAccount.SlackId}> {tipAmount}");
             await SendSuccessfulTip(message, tipAmount);
 
             slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
                 It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(slackUser.Id, TestConstants.RecipientAccount.SlackId, tipAmount, "NXT", txId, ""))), false));
+        }
+
+        [Fact]
+        public async void TipShouldFailOnMixedRecipientTypes()
+        {
+            const decimal tipAmount = 42;
+            var message = CreateChannelMessage($"<@{botUserId}> tip <@{TestConstants.RecipientAccount.SlackId}>, {TestConstants.RecipientAccount2.NxtAccountRs} {tipAmount}");
+            
+            await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id, MessageConstants.UnknownChannelCommandReply, true));
+        }
+
+        [Fact]
+        public async void TipNxtShouldReturnNotEnoughFundsOnMultipleRecipients()
+        {
+            const decimal tipAmount = 42;
+            const decimal balance = 50;
+            var message = CreateChannelMessage($"<@{botUserId}> tip <@{TestConstants.RecipientAccount.SlackId}>, <@{TestConstants.RecipientAccount2.SlackId}> {tipAmount}");
+            SetupNxtAccount(TestConstants.SenderAccount, balance);
+
+            await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFunds(balance, "NXT"))), true));
+        }
+
+        [Fact]
+        public async void TipAssetShouldReturnNotEnoughNxtFundsOnMultipleRecipients()
+        {
+            await TipTransferableShouldReturnNotEnoughNxtFunds(TestConstants.Asset, $"<@{TestConstants.RecipientAccount.SlackId}>, <@{TestConstants.RecipientAccount2.SlackId}>", 2, 1.9M);
+        }
+
+        [Fact]
+        public async void TipCurrencyShouldReturnNotEnoughNxtFundsOnMultipleRecipients()
+        {
+            await TipTransferableShouldReturnNotEnoughNxtFunds(TestConstants.Currency, $"<@{TestConstants.RecipientAccount.SlackId}>, <@{TestConstants.RecipientAccount2.SlackId}>", 2, 1.9M);
+        }
+
+        [Fact]
+        public async void TipCurrencyShouldReturnNotEnoughCurrencyFundsOnMultipleRecipients()
+        {
+            await TipTransferableShouldReturnNotEnoughTransferableFunds(TestConstants.Currency, $"<@{TestConstants.RecipientAccount.SlackId}>, <@{TestConstants.RecipientAccount2.SlackId}>", 50M);
+        }
+
+        [Fact]
+        public async void TipAssetShouldReturnNotEnoughAssetFundsOnMultipleRecipients()
+        {
+            await TipTransferableShouldReturnNotEnoughTransferableFunds(TestConstants.Asset, $"<@{TestConstants.RecipientAccount.SlackId}>, <@{TestConstants.RecipientAccount2.SlackId}>", 50M);
+        }
+
+        [Fact]
+        public async void TipShouldSucceedOnMultipleRecipients()
+        {
+            const decimal tipAmount = 42;
+            const decimal balance = 400;
+            var txId2 = txId + 1;
+            var message = CreateChannelMessage($"<@{botUserId}> tip <@{TestConstants.RecipientAccount.SlackId}>, <@{TestConstants.RecipientAccount2.SlackId}> {tipAmount}");
+
+            SetupNxtAccount(TestConstants.SenderAccount, balance);
+            SetupNxtAccount(TestConstants.RecipientAccount, 0);
+            SetupNxtAccount(TestConstants.RecipientAccount2, 0);
+
+            nxtConnectorMock.Setup(c => c.Transfer(
+                It.Is<NxtAccount>(a => a == TestConstants.SenderAccount),
+                It.Is<string>(r => r == TestConstants.RecipientAccount.NxtAccountRs),
+                It.Is<NxtTransferable>(t => t == Nxt.Singleton),
+                It.Is<decimal>(amount => amount == tipAmount),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+                    .ReturnsAsync(txId);
+
+            nxtConnectorMock.Setup(c => c.Transfer(
+                It.Is<NxtAccount>(a => a == TestConstants.SenderAccount),
+                It.Is<string>(r => r == TestConstants.RecipientAccount2.NxtAccountRs),
+                It.Is<NxtTransferable>(t => t == Nxt.Singleton),
+                It.Is<decimal>(amount => amount == tipAmount),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+                    .ReturnsAsync(txId2);
+
+            await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
+
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(slackUser.Id, TestConstants.RecipientAccount.SlackId, tipAmount, "NXT", txId, ""))), false));
+            slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id,
+                It.Is<string>(input => input.Equals(MessageConstants.TipSentChannel(slackUser.Id, TestConstants.RecipientAccount2.SlackId, tipAmount, "NXT", txId2, ""))), false));
         }
 
         [Theory]
@@ -575,47 +664,45 @@ namespace NxtTipbot.Tests
         [Fact]
         public async void TipCurrencyShouldReturnNotEnoughNxtFunds()
         {
-            await TipTransferableShouldReturnNotEnoughNxtFunds(TestConstants.Currency);
+            await TipTransferableShouldReturnNotEnoughNxtFunds(TestConstants.Currency, $"<@{TestConstants.RecipientAccount.SlackId}>");
         }
 
         [Fact]
         public async void TipAssetShouldReturnNotEnoughNxtFunds()
         {
-            await TipTransferableShouldReturnNotEnoughNxtFunds(TestConstants.Asset);
+            await TipTransferableShouldReturnNotEnoughNxtFunds(TestConstants.Asset, $"<@{TestConstants.RecipientAccount.SlackId}>");
         }
 
-        private async Task TipTransferableShouldReturnNotEnoughNxtFunds(NxtTransferable transferable)
+        private async Task TipTransferableShouldReturnNotEnoughNxtFunds(NxtTransferable transferable, string recipient, int recipientCount = 1, decimal nxtBalance = 0.9M)
         {
-            const decimal balance = 0.9M;
             transferables.AddTransferable(transferable);
-            SetupNxtAccount(TestConstants.SenderAccount, balance);
-            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42 {transferable.Name}");
+            SetupNxtAccount(TestConstants.SenderAccount, nxtBalance);
+            var message = CreateChannelMessage($"tipper tip {recipient} 42 {transferable.Name}");
 
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 
             slackConnectorMock.Verify(c => c.SendMessage(channelSession.Id, 
-                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(balance))), true));
+                It.Is<string>(input => input.Equals(MessageConstants.NotEnoughFundsNeedFee(nxtBalance, recipientCount))), true));
         }
         
         [Fact]
         public async void TipCurrencyShouldReturnNotEnoughCurrencyFunds()
         {
-            await TipTransferableShouldReturnNotEnoughTransferableFunds(TestConstants.Currency);
+            await TipTransferableShouldReturnNotEnoughTransferableFunds(TestConstants.Currency, $"<@{TestConstants.RecipientAccount.SlackId}>");
         }
         
         [Fact]
         public async void TipAssetShouldReturnNotEnoughAssetFunds()
         {
-            await TipTransferableShouldReturnNotEnoughTransferableFunds(TestConstants.Asset);
+            await TipTransferableShouldReturnNotEnoughTransferableFunds(TestConstants.Asset, $"<@{TestConstants.RecipientAccount.SlackId}>");
         }
 
-        private async Task TipTransferableShouldReturnNotEnoughTransferableFunds(NxtTransferable transferable)
+        private async Task TipTransferableShouldReturnNotEnoughTransferableFunds(NxtTransferable transferable, string recipient, decimal balance = 1M)
         {
-            const decimal nxtBalance = 1M;
-            const decimal balance = 1M;
+            const decimal nxtBalance = 100M;
             SetupNxtAccount(TestConstants.SenderAccount, nxtBalance);
             SetupTransferable(transferable, balance, TestConstants.SenderAccount.NxtAccountRs);
-            var message = CreateChannelMessage($"tipper tip <@{TestConstants.RecipientAccount.SlackId}> 42 {transferable.Name}");
+            var message = CreateChannelMessage($"tipper tip {recipient} 42 {transferable.Name}");
 
             await slackHandler.TipBotChannelCommand(message, slackUser, channelSession);
 

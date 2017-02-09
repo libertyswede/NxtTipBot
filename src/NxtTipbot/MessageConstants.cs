@@ -65,7 +65,7 @@ namespace NxtTipbot
             return $"Not enough {unit}. You only have {balance} {unit}.";
         }
 
-        public static string NotEnoughFundsNeedFee(decimal balance)
+        public static string NotEnoughFundsNeedFee(decimal balance, int fee = 1)
         {
             return $"Not enough NXT. 1 NXT is needed for the transaction fee and you only have {balance} NXT.";
         }
