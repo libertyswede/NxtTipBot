@@ -35,7 +35,6 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 * Be able to send to NXT aliases as well as @username and NXT addresses.
 * When trying to tip and sender has 0 NXT, use a more humoristic error message, like 'you're all out mate'.
 * Support having tip command as a part of a multi line chat message.
-* Multiple recipients like: _tipper tip @user1, @user2, @user3 20 NXT_
 * Stats command with support for total number of tips sent and total amount sent.
 * Add support for more units (USD, EUR, beer, etc.).
 * Add support for icons as units, ie. a beer icon instead of the text 'beer'.
