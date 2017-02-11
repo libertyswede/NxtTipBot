@@ -14,6 +14,7 @@ namespace NxtTipbot
     {
         Task InstantMessageCommand(string message, SlackUser slackUser, SlackIMSession imSession);
         Task TipBotChannelCommand(SlackMessage message, SlackUser slackUser, SlackChannelSession channelSession);
+        Task TipBotReactionCommand(SlackReaction reaction, SlackUser slackUser, SlackUser recipientSlackUser, SlackChannelSession channel);
     }
 
     public class SlackHandler : ISlackHandler
@@ -74,12 +75,45 @@ namespace NxtTipbot
 
             if ((match = IsTipCommand(messageText)).Success)
             {
-                await Tip(slackUser, match, channelSession);
+                var recipient = match.Groups[2].Value;
+                var slackUserIds = GetSlackUserIds(recipient);
+                var amountToTip = decimal.Parse(match.Groups["amount"].Value, CultureInfo.InvariantCulture);
+                var unit = string.IsNullOrEmpty(match.Groups["unit"].Value) ? Nxt.Singleton.Name : match.Groups["unit"].Value;
+                var comment = string.IsNullOrEmpty(match.Groups["comment"].Value) ? string.Empty : match.Groups["comment"].Value;
+                var transferable = transferables.GetTransferable(unit);
+                var account = await walletRepository.GetAccount(slackUser.Id);
+
+                await Tip(slackUser, channelSession, recipient, slackUserIds, amountToTip, unit, comment, transferable, account);
             }
             else
             {
                 await SlackConnector.SendMessage(channelSession.Id, MessageConstants.UnknownChannelCommandReply);
             }
+        }
+
+        public async Task TipBotReactionCommand(SlackReaction reaction, SlackUser slackUser, SlackUser recipientSlackUser, SlackChannelSession channel)
+        {
+            // Check if reaction is associated with any asset or ms currency
+            var transferable = transferables.NxtTransferables.FirstOrDefault(t => t.ReactionId == reaction.Reaction);
+            if (transferable == null)
+            {
+                return;
+            }
+
+            // TODO:
+            // Check if slackUser has turned on setting for tipping using reaction
+            // Get amount to tip
+            // Get transferable & unit
+            // Get comment
+
+            var recipient = $"<@{recipientSlackUser.Id}>";
+            var slackUserIds = new List<string> { recipientSlackUser.Id };
+            var amountToTip = 5;
+            var unit = transferable.Name;
+            var comment = "";
+            var account = await walletRepository.GetAccount(slackUser.Id);
+
+            await Tip(slackUser, channel, recipient, slackUserIds, amountToTip, unit, comment, transferable, account);
         }
 
         private async Task UnknownCommand(SlackIMSession imSession)
@@ -212,14 +246,14 @@ namespace NxtTipbot
                 var id = ulong.Parse(unit);
                 try
                 {
-                    var asset = await nxtConnector.GetAsset(new TransferableConfig(id, "", "", new List<string>()));
+                    var asset = await nxtConnector.GetAsset(new TransferableConfig(id, "", "", new List<string>(), ""));
                     transferable = asset;
                 }
                 catch (Exception)
                 {
                     try
                     {
-                        var currency = await nxtConnector.GetCurrency(new TransferableConfig(id, "", "", new List<string>()));
+                        var currency = await nxtConnector.GetCurrency(new TransferableConfig(id, "", "", new List<string>(), ""));
                         transferable = currency;
                     }
                     catch (Exception) { }
@@ -277,18 +311,12 @@ namespace NxtTipbot
             }
             return userIds;
         }
-
-        private async Task Tip(SlackUser slackUser, Match match, SlackChannelSession channelSession)
+        
+        private async Task Tip(SlackUser slackUser, SlackChannelSession channelSession, string recipient, List<string> slackUserIds, decimal amountToTip, 
+            string unit, string comment, NxtTransferable transferable, NxtAccount account)
         {
-            var recipient = match.Groups[2].Value;
-            var slackUserIds = GetSlackUserIds(recipient);
             var isRecipientSlackUser = slackUserIds.Any();
             var recipientCount = isRecipientSlackUser ? slackUserIds.Count : 1;
-            var amountToTip = decimal.Parse(match.Groups["amount"].Value, CultureInfo.InvariantCulture);
-            var unit = string.IsNullOrEmpty(match.Groups["unit"].Value) ? Nxt.Singleton.Name : match.Groups["unit"].Value;
-            var comment = string.IsNullOrEmpty(match.Groups["comment"].Value) ? string.Empty : match.Groups["comment"].Value;
-            var transferable = transferables.GetTransferable(unit);
-            var account = await walletRepository.GetAccount(slackUser.Id);
 
             if (slackUserIds.Contains(SlackConnector.SelfId))
             {

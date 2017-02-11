@@ -91,13 +91,13 @@ namespace NxtTipbot
         public async Task<NxtAsset> GetAsset(TransferableConfig assetConfig)
         {
             var asset = await assetExchangeService.GetAsset(assetConfig.Id);
-            return new NxtAsset(asset, assetConfig.RecipientMessage, assetConfig.Monikers);
+            return new NxtAsset(asset, assetConfig.RecipientMessage, assetConfig.Monikers, assetConfig.ReactionId);
         }
 
         public async Task<NxtCurrency> GetCurrency(TransferableConfig currencyConfig)
         {
             var currencyReply = await monetarySystemService.GetCurrency(CurrencyLocator.ByCurrencyId(currencyConfig.Id));
-            return new NxtCurrency(currencyReply, currencyConfig.RecipientMessage, currencyConfig.Monikers);
+            return new NxtCurrency(currencyReply, currencyConfig.RecipientMessage, currencyConfig.Monikers, currencyConfig.ReactionId);
         }
 
         public async Task<Dictionary<NxtTransferable, decimal>> GetBalances(string addressRs, IList<NxtTransferable> existingTransferables)
@@ -114,7 +114,7 @@ namespace NxtTipbot
             foreach (var accountAsset in assetsTask.Result)
             {
                 var transferable = existingTransferables.SingleOrDefault(t => t.Id == accountAsset.AssetId) ??
-                    new NxtAsset(accountAsset.AssetId, accountAsset.Name, accountAsset.Decimals);
+                    new NxtAsset(accountAsset.AssetId, accountAsset.Name, accountAsset.Decimals, "");
 
                 result.Add(transferable, accountAsset.QuantityQnt / (decimal)Math.Pow(10, accountAsset.Decimals));
             }
@@ -122,7 +122,7 @@ namespace NxtTipbot
             foreach (var accountCurrency in currenciesTask.Result)
             {
                 var transferable = existingTransferables.SingleOrDefault(t => t.Id == accountCurrency.CurrencyId) ??
-                    new NxtCurrency(accountCurrency.CurrencyId, accountCurrency.Code, accountCurrency.Decimals);
+                    new NxtCurrency(accountCurrency.CurrencyId, accountCurrency.Code, accountCurrency.Decimals, "");
 
                 result.Add(transferable, accountCurrency.UnconfirmedUnits / (decimal)Math.Pow(10, accountCurrency.Decimals));
             }

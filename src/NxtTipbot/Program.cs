@@ -17,7 +17,7 @@ namespace NxtTipbot
         {
             Console.WriteLine("Starting up NxtTipbot");
             var configSettings = ReadConfig();
-
+            
             var logLevel = GetLogLevel(configSettings);
             var apiToken = configSettings.Single(c => c.Key == "apitoken").Value;
             var walletFile = configSettings.Single(c => c.Key == "walletFile").Value;
@@ -48,11 +48,26 @@ namespace NxtTipbot
             VerifyBlockchainBackup(blockchainBackup, logger, nxtConnector, blockchainStore, walletRepository);
             slackHandler.SlackConnector = slackConnector;
             var transferableList = GetTransferables(currencyConfigs, assetConfigs, nxtConnector);
+            CheckReactionIds(transferableList);
             transferableList.ForEach(t => transferables.AddTransferable(t));
 
             var slackTask = Task.Run(() => slackConnector.Run());
             Task.WaitAll(slackTask);
             logger.LogInformation("Exiting NxtTipbot");
+        }
+
+        private static void CheckReactionIds(List<NxtTransferable> transferableList)
+        {
+            var reactionIds = new Dictionary<string, string> { { "nxt", "NXT" } };
+            foreach (var transferable in transferableList.Where(t => !string.IsNullOrEmpty(t.ReactionId)))
+            {
+                if (reactionIds.ContainsKey(transferable.ReactionId))
+                {
+                    Console.WriteLine($"Cannot add reaction {transferable.ReactionId} twice.");
+                    throw new Exception($"Cannot add reaction {transferable.ReactionId} twice.");
+                }
+                reactionIds.Add(transferable.ReactionId, transferable.Name);
+            }
         }
 
         private static void VerifyBlockchainBackup(bool blockchainBackup, ILogger logger, NxtConnector nxtConnector, 
@@ -121,7 +136,8 @@ namespace NxtTipbot
                     var name = section.GetChildren().Single(a => a.Key == "name").Value;
                     var recipientMessage = section.GetChildren().SingleOrDefault(a => a.Key == "recipientMessage")?.Value;
                     var monikers = section.GetChildren().SingleOrDefault(a => a.Key == "monikers");
-                    yield return new TransferableConfig(id, name, recipientMessage, GetTransferableMonikers(monikers));
+                    var reactionId = section.GetChildren().SingleOrDefault(c => c.Key == "tipReactionId")?.Value ?? string.Empty;
+                    yield return new TransferableConfig(id, name, recipientMessage, GetTransferableMonikers(monikers), reactionId);
                 }
             }
         }

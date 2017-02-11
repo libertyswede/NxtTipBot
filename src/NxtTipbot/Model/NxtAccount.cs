@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -27,5 +28,8 @@ namespace NxtTipbot.Model
         [NotMapped]
         [JsonIgnore]
         public string SecretPhrase { get; set; }
+
+        [JsonIgnore]
+        public List<UserSetting> UserSettings { get; set; }
     }
 }

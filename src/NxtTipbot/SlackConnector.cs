@@ -117,13 +117,15 @@ namespace NxtTipbot
                     case "reconnect_url":
                     case "user_typing":
                     case "hello":
-                    case "reaction_added":
                     case "reaction_removed":
                     case "file_shared":
                     case "file_public":
                     case "dnd_updated_user":
                     case "pin_added":
                     case "pin_removed":
+                        break;
+
+                    case "reaction_added": await HandleReactionAdded(json);
                         break;
 
                     case "message": await HandleMessage(json);
@@ -144,6 +146,19 @@ namespace NxtTipbot
                     default: logger.LogTrace($"Data recieved: {json}");
                         break; 
                 }
+            }
+        }
+
+        private async Task HandleReactionAdded(string json)
+        {
+            var reaction = JsonConvert.DeserializeObject<SlackReaction>(json);
+            var slackUser = slackUsers.SingleOrDefault(u => u.Id == reaction.UserId);
+            var recipientSlackUser = slackUsers.SingleOrDefault(u => u.Id == reaction.ItemUserId);
+            var channel = channelSessions.SingleOrDefault(c => c.Id == reaction.Item.ChannelId);
+
+            if (slackUser != null && recipientSlackUser != null && slackUser.Id != SelfId && channel != null)
+            {
+                await slackHandler.TipBotReactionCommand(reaction, slackUser, recipientSlackUser, channel);
             }
         }
 
