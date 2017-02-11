@@ -26,6 +26,7 @@ Written in .NET Core, that runs on Windows, Linux and macOS.
 2. In the test/NxtTipbot.Tests directory, type 'dotnet restore' and the 'dotnet test'
 
 # Todo
+* Improved help command, where you can say "help tip" to get more in depth help of the tip command.
 * On startup, call getBlockchainStatus API function and check isDownloading property. If true, shut down with proper error message.
 * Implement deposit/withdraw for MGW asset(s). Need to verify this with VB.
 * Config option for local signing instead of relying on NRS signing transactions.
