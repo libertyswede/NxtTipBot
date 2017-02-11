@@ -12,6 +12,7 @@ namespace NxtTipbot
         void AddTransferable(NxtTransferable transferable);
         NxtTransferable GetTransferable(string name);
         bool ContainsTransferable(NxtTransferable transferable);
+        NxtTransferable GetTransferableByReactionId(string reactionId);
     }
 
     public class Transferables : ITransferables
@@ -72,6 +73,12 @@ namespace NxtTipbot
                 transferableIds.TryGetValue(id, out transferable);
             }
 
+            return transferable;
+        }
+
+        public NxtTransferable GetTransferableByReactionId(string reactionId)
+        {
+            var transferable = transferables.FirstOrDefault(t => t.Reactions.Any(r => r.ReactionId == reactionId));
             return transferable;
         }
     }

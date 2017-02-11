@@ -58,15 +58,15 @@ namespace NxtTipbot
 
         private static void CheckReactionIds(List<NxtTransferable> transferableList)
         {
-            var reactionIds = new Dictionary<string, string> { { "nxt", "NXT" } };
-            foreach (var transferable in transferableList.Where(t => !string.IsNullOrEmpty(t.ReactionId)))
+            var reactionIds = new HashSet<string> { "nxt" };
+            foreach (var reaction in transferableList.Where(t => t.Reactions.Any()).SelectMany(t => t.Reactions))
             {
-                if (reactionIds.ContainsKey(transferable.ReactionId))
+                if (reactionIds.Contains(reaction.ReactionId))
                 {
-                    Console.WriteLine($"Cannot add reaction {transferable.ReactionId} twice.");
-                    throw new Exception($"Cannot add reaction {transferable.ReactionId} twice.");
+                    Console.WriteLine($"Cannot add reaction {reaction.ReactionId} twice.");
+                    throw new Exception($"Cannot add reaction {reaction.ReactionId} twice.");
                 }
-                reactionIds.Add(transferable.ReactionId, transferable.Name);
+                reactionIds.Add(reaction.ReactionId);
             }
         }
 
@@ -136,8 +136,19 @@ namespace NxtTipbot
                     var name = section.GetChildren().Single(a => a.Key == "name").Value;
                     var recipientMessage = section.GetChildren().SingleOrDefault(a => a.Key == "recipientMessage")?.Value;
                     var monikers = section.GetChildren().SingleOrDefault(a => a.Key == "monikers");
-                    var reactionId = section.GetChildren().SingleOrDefault(c => c.Key == "tipReactionId")?.Value ?? string.Empty;
-                    yield return new TransferableConfig(id, name, recipientMessage, GetTransferableMonikers(monikers), reactionId);
+                    var reactions = section.GetChildren().SingleOrDefault(c => c.Key == "tipReactions");
+                    var tipReactions = new List<TipReaction>();
+                    if (reactions != null)
+                    {
+                        foreach (var reaction in reactions.GetChildren())
+                        {
+                            var tipReactionId = reaction.GetChildren().Single(c => c.Key == "tipReactionId").Value;
+                            var tipReactionAmount = reaction.GetChildren().Single(c => c.Key == "tipReactionAmount").Value;
+                            var tipReactionComment = reaction.GetChildren().Single(c => c.Key == "tipReactionComment").Value;
+                            tipReactions.Add(new TipReaction(tipReactionId, tipReactionComment, decimal.Parse(tipReactionAmount)));
+                        }
+                    }
+                    yield return new TransferableConfig(id, name, recipientMessage, GetTransferableMonikers(monikers), tipReactions);
                 }
             }
         }

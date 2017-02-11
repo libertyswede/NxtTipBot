@@ -36,14 +36,14 @@ namespace NxtTipbot.Tests
             CurrencyId = 123,
             Code = "TEST",
             Decimals = 4
-        }, "{sender} just sent you {amount} TEST!", new List<string>(), "");
+        }, "{sender} just sent you {amount} TEST!", new List<string>(), new List<TipReaction>());
 
         public static readonly NxtAsset Asset = new NxtAsset(new Asset
         {
             AssetId = 234,
             Decimals = 4,
             Name = "TEST"
-        }, "{sender} just sent you {amount} TEST!", new List<string> { "TST", "TESTT" }, "");
+        }, "{sender} just sent you {amount} TEST!", new List<string> { "TST", "TESTT" }, new List<TipReaction>());
 
         public static readonly string ValidAddressRs1 = "NXT-G885-AKDX-5G2B-BLUCG";
         public static readonly string InvalidAddressRs1 = "NXT-G885-AKDX-582B-BLUCG";

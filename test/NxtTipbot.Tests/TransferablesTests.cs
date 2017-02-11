@@ -15,8 +15,8 @@ namespace NxtTipbot.Tests
         [Fact]
         public void AddTransferableShouldNotAllowDuplicateId()
         {
-            var asset1 = new NxtAsset(234, "asset1", 0, "");
-            var asset2 = new NxtAsset(234, "asset2", 0, "");
+            var asset1 = new NxtAsset(234, "asset1", 0, new List<TipReaction>());
+            var asset2 = new NxtAsset(234, "asset2", 0, new List<TipReaction>());
             transferables.AddTransferable(asset1);
 
             Assert.Throws<ArgumentException>(() => transferables.AddTransferable(asset2));
@@ -25,8 +25,8 @@ namespace NxtTipbot.Tests
         [Fact]
         public void AddTransferableShouldNotAllowDuplicateNames()
         {
-            var asset1 = new NxtAsset(123, "asset1", 0, "");
-            var asset2 = new NxtAsset(234, "asset1", 0, "");
+            var asset1 = new NxtAsset(123, "asset1", 0, new List<TipReaction>());
+            var asset2 = new NxtAsset(234, "asset1", 0, new List<TipReaction>());
             transferables.AddTransferable(asset1);
 
             Assert.Throws<ArgumentException>(() => transferables.AddTransferable(asset2));
@@ -35,8 +35,8 @@ namespace NxtTipbot.Tests
         [Fact]
         public void AddTransferableShouldNotAllowDuplicateMonikerNames()
         {
-            var asset1 = new NxtAsset(123, "asset1", 0, "");
-            var asset2 = new NxtAsset(new NxtLib.AssetExchange.Asset { AssetId = 234, Decimals = 0, Name = "asset2" }, "", new List<string> { "asset1" }, "");
+            var asset1 = new NxtAsset(123, "asset1", 0, new List<TipReaction>());
+            var asset2 = new NxtAsset(new NxtLib.AssetExchange.Asset { AssetId = 234, Decimals = 0, Name = "asset2" }, "", new List<string> { "asset1" }, new List<TipReaction>());
             transferables.AddTransferable(asset1);
 
             Assert.Throws<ArgumentException>(() => transferables.AddTransferable(asset2));
@@ -64,7 +64,7 @@ namespace NxtTipbot.Tests
         public void GetTransferableShouldReturnValueByName()
         {
             const string assetname = "asset1";
-            var expected = new NxtAsset(123, assetname, 0, "");
+            var expected = new NxtAsset(123, assetname, 0, new List<TipReaction>());
             GetTransferableShouldReturnExpectedValue(expected, assetname);
         }
 
@@ -72,7 +72,7 @@ namespace NxtTipbot.Tests
         public void GetTransferableShouldReturnValueById()
         {
             const ulong assetId = 123;
-            var expected = new NxtAsset(assetId, "asset1", 0, "");
+            var expected = new NxtAsset(assetId, "asset1", 0, new List<TipReaction>());
             GetTransferableShouldReturnExpectedValue(expected, assetId.ToString());
         }
 
@@ -80,7 +80,7 @@ namespace NxtTipbot.Tests
         public void GetTransferableShouldReturnValueByMoniker()
         {
             const string moniker = "assetmoniker";
-            var expected = new NxtAsset(new NxtLib.AssetExchange.Asset { AssetId = 123, Decimals = 0, Name = "asset1" }, "", new List<string> { moniker }, "");
+            var expected = new NxtAsset(new NxtLib.AssetExchange.Asset { AssetId = 123, Decimals = 0, Name = "asset1" }, "", new List<string> { moniker }, new List<TipReaction>());
             GetTransferableShouldReturnExpectedValue(expected, moniker);
         }
 

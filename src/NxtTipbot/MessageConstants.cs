@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace NxtTipbot
 {
@@ -23,12 +24,21 @@ namespace NxtTipbot
 
         public const string ListCommandHeader = "List of supported units:\n\n";
 
+        public const string UserSettingsHeader = "These are your current user settings:\n\n";
+
+        public const string UserSettingsFooter = "To update a setting use the *set* command:\n\n";
+
+        public const string UserSettingsReactionSettingDescription = "Automatically tips a user when you award them with a reaction emoji.\n"
+                                                                   + "To see available reaction emojis for different assets / currencies, use the *list* command.";
+
         public static string GetHelpText(string botName)
         {
             return "*Direct Message Commands*\n"
                     + "_balance_ - Wallet balance\n"
                     + "_deposit_ - shows your deposit address (or creates one if you don't have one already)\n"
                     + "_withdraw [nxt address] amount [unit]_ - withdraws amount to specified NXT address\n"
+                    + "_settings_ - shows your current user settings\n"
+                    + "_set [setting] [value]_ - updates your setting\n"
                     + "_list_ - shows a list of supported units\n\n"
                     + "*Channel Commands*\n"
                     + $"_@{botName} tip [@user or NXT address] amount [unit] [comment]_ - sends a tip to specified user\n\n"
@@ -68,6 +78,16 @@ namespace NxtTipbot
         public static string NotEnoughFundsNeedFee(decimal balance, int fee = 1)
         {
             return $"Not enough NXT. 1 NXT is needed for the transaction fee and you only have {balance} NXT.";
+        }
+
+        internal static string UserReactionSettingUpdated(bool reactionTipValue)
+        {
+            if (reactionTipValue)
+            {
+                return $"Your reaction tip setting is turned on, and which means using certain reaction emojis will trigger a tip.\n" +
+                        "To see available reaction emojis for different assets / currencies, use the *list* command.";
+            }
+            return $"Your reaction tip setting is turned off, and you can safely use reaction emojis without sending a tip.";
         }
 
         public static string Withdraw(decimal amount, string unit, ulong txId)
@@ -144,6 +164,15 @@ namespace NxtTipbot
                 foreach (var moniker in transferable.Monikers)
                 {
                     message += $"{moniker}, ";
+                }
+                message = message.Substring(0, message.Length - 2);
+            }
+            if (transferable.Reactions.Any())
+            {
+                message += $"\nSlack reaction emojis: ";
+                foreach (var reaction in transferable.Reactions)
+                {
+                    message += $":{reaction.ReactionId}: amount: {reaction.Amount}, ";
                 }
                 message = message.Substring(0, message.Length - 2);
             }

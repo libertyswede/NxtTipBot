@@ -58,13 +58,44 @@ namespace NxtTipbot
             {
                 await List(imSession);
             }
+            else if (IsSingleWordCommand(messageText, "settings"))
+            {
+                await UserSettings(slackUser, imSession);
+            }
             else if ((match = IsWithdrawCommand(messageText)).Success)
             {
                 await Withdraw(slackUser, imSession, match);
             }
+            else if ((match = IsUserSettingCommand(messageText)).Success)
+            {
+                await UpdateUserSetting(slackUser, imSession, match);
+            }
             else
             {
                 await UnknownCommand(imSession);
+            }
+        }
+
+        private async Task UserSettings(SlackUser slackUser, SlackIMSession imSession)
+        {
+            var message = $"{MessageConstants.UserSettingsHeader}";
+            var reactionTipSetting = await walletRepository.GetUserReactionTipSetting(slackUser.Id) ? "on" : "off";
+            message += $"*reactiontip = {reactionTipSetting}* - valid values: _on_ and _off_\n"
+                     + $"Description: {MessageConstants.UserSettingsReactionSettingDescription}\n\n";
+            message += MessageConstants.UserSettingsFooter;
+            await SlackConnector.SendMessage(imSession.Id, message);
+        }
+
+        private async Task UpdateUserSetting(SlackUser slackUser, SlackIMSession imSession, Match match)
+        {
+            var key = match.Groups["key"].Value.ToString().ToLower();
+            var value = match.Groups["value"].Value.ToString().ToLower();
+
+            if (key.Equals("reactiontip"))
+            {
+                var reactionTipValue = value.Equals("on");
+                await walletRepository.SetUserReactionTipSetting(slackUser.Id, reactionTipValue);
+                await SlackConnector.SendMessage(imSession.Id, MessageConstants.UserReactionSettingUpdated(reactionTipValue));
             }
         }
 
@@ -93,24 +124,23 @@ namespace NxtTipbot
 
         public async Task TipBotReactionCommand(SlackReaction reaction, SlackUser slackUser, SlackUser recipientSlackUser, SlackChannelSession channel)
         {
-            // Check if reaction is associated with any asset or ms currency
-            var transferable = transferables.NxtTransferables.FirstOrDefault(t => t.ReactionId == reaction.Reaction);
+            var transferable = transferables.GetTransferableByReactionId(reaction.Reaction);
             if (transferable == null)
             {
                 return;
             }
-
-            // TODO:
-            // Check if slackUser has turned on setting for tipping using reaction
-            // Get amount to tip
-            // Get transferable & unit
-            // Get comment
+            
+            if (!(await walletRepository.GetUserReactionTipSetting(slackUser.Id)))
+            {
+                return;
+            }
 
             var recipient = $"<@{recipientSlackUser.Id}>";
             var slackUserIds = new List<string> { recipientSlackUser.Id };
-            var amountToTip = 5;
+            var tipReaction = transferable.Reactions.Single(r => r.ReactionId == reaction.Reaction);
+            var amountToTip = tipReaction.Amount;
             var unit = transferable.Name;
-            var comment = "";
+            var comment = tipReaction.Comment;
             var account = await walletRepository.GetAccount(slackUser.Id);
 
             await Tip(slackUser, channel, recipient, slackUserIds, amountToTip, unit, comment, transferable, account);
@@ -246,14 +276,14 @@ namespace NxtTipbot
                 var id = ulong.Parse(unit);
                 try
                 {
-                    var asset = await nxtConnector.GetAsset(new TransferableConfig(id, "", "", new List<string>(), ""));
+                    var asset = await nxtConnector.GetAsset(new TransferableConfig(id, "", "", new List<string>(), new List<TipReaction>()));
                     transferable = asset;
                 }
                 catch (Exception)
                 {
                     try
                     {
-                        var currency = await nxtConnector.GetCurrency(new TransferableConfig(id, "", "", new List<string>(), ""));
+                        var currency = await nxtConnector.GetCurrency(new TransferableConfig(id, "", "", new List<string>(), new List<TipReaction>()));
                         transferable = currency;
                     }
                     catch (Exception) { }
@@ -447,6 +477,13 @@ namespace NxtTipbot
         private Match IsTipCommand(string message)
         {
             var regex = new Regex($"^\\s*(?i)({SlackConnector.SelfName}|<@{SlackConnector.SelfId}>) +tip(?-i) +((\\s*,?\\s*<@[A-Za-z0-9]+>){{0,5}}|NXT-[A-Z0-9\\-]+) +(?<amount>[0-9]+\\.?[0-9]*) *(?<unit>[A-Za-z0-9_\\.]+)? *(?<comment>.*)");
+            var match = regex.Match(message);
+            return match;
+        }
+
+        private static Match IsUserSettingCommand(string message)
+        {
+            var regex = new Regex("^\\s*set (?<key>reactiontip) (?<value>on|off)", RegexOptions.IgnoreCase);
             var match = regex.Match(message);
             return match;
         }
