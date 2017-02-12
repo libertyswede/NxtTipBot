@@ -146,7 +146,7 @@ namespace NxtTipbot
             var message = $"*{transferable.Name}*";
             if (transferable.Type == NxtTransferableType.Nxt)
             {
-                message += " - https://nxt.org/";
+                message += " - https://nxt.org/\n";
             }
             if (transferable.Type == NxtTransferableType.Asset)
             {
@@ -165,19 +165,19 @@ namespace NxtTipbot
                 {
                     message += $"{moniker}, ";
                 }
-                message = message.Substring(0, message.Length - 2);
+                message = message.Substring(0, message.Length - 2) + "\n";
             }
             if (transferable.Reactions.Any())
             {
-                message += $"\nSlack reaction emojis: ";
+                message += $"Slack reaction emojis: ";
                 foreach (var reaction in transferable.Reactions)
                 {
                     message += $":{reaction.ReactionId}: amount: {reaction.Amount}, ";
                 }
-                message = message.Substring(0, message.Length - 2);
+                message = message.Substring(0, message.Length - 2) + "\n";
             }
                             
-            return message + "\n\n";
+            return message + "\n";
         }
 
         public static string RecipientDoesNotHaveAnyNxtHint(string recipientSlackId, string unit)
