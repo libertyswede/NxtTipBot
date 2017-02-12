@@ -51,6 +51,7 @@ namespace NxtTipbot
                 try
                 {
                     string websocketUri = string.Empty;
+                    List<SlackChannelSession> groupSessions;
                     using (var httpClient = new HttpClient())
                     using (var response = await httpClient.GetAsync($"https://slack.com/api/rtm.start?token={apiToken}"))
                     using (var content = response.Content)
@@ -62,12 +63,17 @@ namespace NxtTipbot
                         SelfId = (string)jObject["self"]["id"];
                         SelfName = (string)jObject["self"]["name"];
                         channelSessions = JsonConvert.DeserializeObject<List<SlackChannelSession>>(jObject["channels"].ToString());
+                        groupSessions = JsonConvert.DeserializeObject<List<SlackChannelSession>>(jObject["groups"].ToString());
+                        groupSessions.ForEach(g => g.IsMember = true);
                         slackUsers = JsonConvert.DeserializeObject<List<SlackUser>>(jObject["users"].ToString());
                         imSessions = JsonConvert.DeserializeObject<List<SlackIMSession>>(jObject["ims"].ToString());
                     }
 
                     var channels = string.Join(", ", channelSessions.Where(s => s.IsMember).Select(s => s.Name));
+                    var groups = string.Join(", ", groupSessions.Where(s => s.IsMember).Select(s => s.Name));
+                    channelSessions.AddRange(groupSessions);
                     logger.LogTrace($"I'm currently in these channels: {channels}");
+                    logger.LogTrace($"I'm currently in these private channels: {groups}");
 
                     webSocket = new ClientWebSocket();
                     lastConnectTry = DateTime.UtcNow;
