@@ -106,7 +106,7 @@ namespace NxtTipbot
 
             if ((match = IsTipCommand(messageText)).Success)
             {
-                logger.LogTrace("Recieved tip command: " + messageText);
+                logger.LogTrace($"Recieved tip command: {messageText} in channel {channelSession.Name}");
                 var recipient = match.Groups[2].Value;
                 var slackUserIds = GetSlackUserIds(recipient);
                 var amountToTip = decimal.Parse(match.Groups["amount"].Value, CultureInfo.InvariantCulture);
