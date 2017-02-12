@@ -26,7 +26,7 @@ namespace NxtTipbot
 
         public const string UserSettingsHeader = "These are your current user settings:\n\n";
 
-        public const string UserSettingsFooter = "To update a setting use the *set* command:\n\n";
+        public const string UserSettingsFooter = "To update a setting use the *set* command, for example *\"set reactiontip on\"*\n\n";
 
         public const string UserSettingsReactionSettingDescription = "Automatically tips a user when you award them with a reaction emoji.\n"
                                                                    + "To see available reaction emojis for different assets / currencies, use the *list* command.";

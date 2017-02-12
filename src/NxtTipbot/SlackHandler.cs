@@ -80,7 +80,7 @@ namespace NxtTipbot
         {
             var message = $"{MessageConstants.UserSettingsHeader}";
             var reactionTipSetting = await walletRepository.GetUserReactionTipSetting(slackUser.Id) ? "on" : "off";
-            message += $"*reactiontip = {reactionTipSetting}* - valid values: _on_ and _off_\n"
+            message += $"*reactiontip {reactionTipSetting}* - valid values: _on_ and _off_\n"
                      + $"Description: {MessageConstants.UserSettingsReactionSettingDescription}\n\n";
             message += MessageConstants.UserSettingsFooter;
             await SlackConnector.SendMessage(imSession.Id, message);
