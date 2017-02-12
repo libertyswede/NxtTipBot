@@ -52,8 +52,9 @@ namespace NxtTipbot
                 {
                     string websocketUri = string.Empty;
                     List<SlackChannelSession> groupSessions;
+                    List<SlackChannelSession> mpimSessions;
                     using (var httpClient = new HttpClient())
-                    using (var response = await httpClient.GetAsync($"https://slack.com/api/rtm.start?token={apiToken}"))
+                    using (var response = await httpClient.GetAsync($"https://slack.com/api/rtm.start?token={apiToken}&simple_latest=true&no_unreads=true&mpim_aware=true"))
                     using (var content = response.Content)
                     {
                         var json = await content.ReadAsStringAsync();
@@ -64,16 +65,18 @@ namespace NxtTipbot
                         SelfName = (string)jObject["self"]["name"];
                         channelSessions = JsonConvert.DeserializeObject<List<SlackChannelSession>>(jObject["channels"].ToString());
                         groupSessions = JsonConvert.DeserializeObject<List<SlackChannelSession>>(jObject["groups"].ToString());
-                        groupSessions.ForEach(g => g.IsMember = true);
+                        mpimSessions = JsonConvert.DeserializeObject<List<SlackChannelSession>>(jObject["mpims"].ToString());
                         slackUsers = JsonConvert.DeserializeObject<List<SlackUser>>(jObject["users"].ToString());
                         imSessions = JsonConvert.DeserializeObject<List<SlackIMSession>>(jObject["ims"].ToString());
                     }
 
                     var channels = string.Join(", ", channelSessions.Where(s => s.IsMember).Select(s => s.Name));
                     var groups = string.Join(", ", groupSessions.Where(s => s.IsMember).Select(s => s.Name));
-                    channelSessions.AddRange(groupSessions);
+                    var mpims = string.Join(", ", mpimSessions.Where(s => s.IsMember).Select(s => s.Name));
+                    channelSessions.AddRange(groupSessions.Union(mpimSessions));
                     logger.LogTrace($"I'm currently in these channels: {channels}");
                     logger.LogTrace($"I'm currently in these private channels: {groups}");
+                    logger.LogTrace($"I'm currently in these Multiparty IM's: {mpims}");
 
                     webSocket = new ClientWebSocket();
                     lastConnectTry = DateTime.UtcNow;
