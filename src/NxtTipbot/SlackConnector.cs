@@ -123,6 +123,7 @@ namespace NxtTipbot
                     case "dnd_updated_user":
                     case "pin_added":
                     case "pin_removed":
+                    case "desktop_notification":
                         break;
 
                     case "reaction_added": await HandleReactionAdded(json);
