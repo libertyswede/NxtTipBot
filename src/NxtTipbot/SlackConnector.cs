@@ -66,7 +66,7 @@ namespace NxtTipbot
                         imSessions = JsonConvert.DeserializeObject<List<SlackIMSession>>(jObject["ims"].ToString());
                     }
 
-                    var channels = string.Join(", ", channelSessions.Select(s => s.Name));
+                    var channels = string.Join(", ", channelSessions.Where(s => s.IsMember).Select(s => s.Name));
                     logger.LogTrace($"I'm currently in these channels: {channels}");
 
                     webSocket = new ClientWebSocket();
