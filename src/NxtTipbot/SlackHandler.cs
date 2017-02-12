@@ -106,6 +106,7 @@ namespace NxtTipbot
 
             if ((match = IsTipCommand(messageText)).Success)
             {
+                logger.LogTrace("Recieved tip command: " + messageText);
                 var recipient = match.Groups[2].Value;
                 var slackUserIds = GetSlackUserIds(recipient);
                 var amountToTip = decimal.Parse(match.Groups["amount"].Value, CultureInfo.InvariantCulture);
@@ -134,6 +135,9 @@ namespace NxtTipbot
             {
                 return;
             }
+
+            logger.LogTrace($"Recieved tip reaction command: reaction: {reaction.Reaction}, User: {slackUser.Id} ({slackUser.Name}), " +
+                            $"Recipient: {recipientSlackUser.Id} ({recipientSlackUser.Name}), Channel: {channel.Id} ({channel.Name})");
 
             var recipient = $"<@{recipientSlackUser.Id}>";
             var slackUserIds = new List<string> { recipientSlackUser.Id };
